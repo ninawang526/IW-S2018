@@ -1,15 +1,15 @@
 import twitter
 
-consumer_key         = "yicSg4MsxQHcegoyy80XXdWSE"
-consumer_secret      = "ApbUm0xrOegvpJQuQbcCszHiiQ3cHE87ER2gcLUfPi8tpfYyfR"
-access_token_key     = "173325385-c8fhGSRI9zEmRVsyhtQIttCWfVmLzZubVUGfWnKD"
-access_token_secret  = "7yKdHCAk5PqlAhs7SeFnB61EP7yOS5o694ndt6ZXjlc2q"
+consumer_key1         = "yicSg4MsxQHcegoyy80XXdWSE"
+consumer_secret1      = "ApbUm0xrOegvpJQuQbcCszHiiQ3cHE87ER2gcLUfPi8tpfYyfR"
+access_token_key1     = "173325385-c8fhGSRI9zEmRVsyhtQIttCWfVmLzZubVUGfWnKD"
+access_token_secret1  = "7yKdHCAk5PqlAhs7SeFnB61EP7yOS5o694ndt6ZXjlc2q"
 
-api1 = twitter.Api(consumer_key=consumer_key,
-                  consumer_secret=consumer_secret,
-                  access_token_key=access_token_key,
-                  access_token_secret=access_token_secret,
-                  sleep_on_rate_limit=True)
+# api1 = twitter.Api(consumer_key=consumer_key,
+#                   consumer_secret=consumer_secret,
+#                   access_token_key=access_token_key,
+#                   access_token_secret=access_token_secret,
+#                   sleep_on_rate_limit=True)
 
 consumer_key2 = "9PASS1v6kukRdjoO8IgOR9GGg"
 consumer_secret2 = "O90GaP4knytCYRNvAUYDK6qO63jyodSJWZOcizExqMcu3Oy1vh"
