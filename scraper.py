@@ -38,7 +38,7 @@ import twitter
 import json
 import csv
 import time
-from apps import getAPI, api1, api2, api3, api4, api5, api6
+from apps import getAPI
 
 import urllib2
 import re
@@ -61,12 +61,15 @@ with open('fake_news_sites.csv', 'rb') as f:
 	#print item
 
 
+
 statuses = api.GetUserTimeline(screen_name="ninawang526",count=200)
+
+
 #users = api.GetFriends(screen_name="MeghanSumz12")
 
 #print "num statuses: ", (statuses[-1].created_at)
 
-
+#https://stackoverflow.com/questions/28982850/twitter-api-getting-list-of-users-who-favorited-a-status
 def get_user_ids_of_post_likes(post_id):
     try:
         json_data = urllib2.urlopen('https://twitter.com/i/activity/favorited_popup?id=' + str(post_id)).read()
@@ -80,6 +83,10 @@ def get_user_ids_of_post_likes(post_id):
         return False
 
 
+f = open("data.txt", 'a')
+inter = open("inter.txt", 'a')
+
+data = {}
 
 #for s in statuses:
 for i in range(0, 5):
@@ -96,52 +103,84 @@ for i in range(0, 5):
 			urls = source.urls
 
 			for url in urls:
-				sitename = (url.expanded_url).split(".") 	#urls[0] type = URL
-
-				if (sitename[0][:11] == "https://www" or sitename[0][:10] == "http://www" 
-					or sitename[0][:13] == "https://on"):
-					print sitename[1]
-				else:
-					print sitename[0][8:]
 
 				# print retweeters
 				rts = api.GetRetweeters(source.id, count=1000)
 				likes = get_user_ids_of_post_likes(source.id)
 
-				my_id = api.GetUser(screen_name="ninawang526").id
-
+				# my_id = api.GetUser(screen_name="ninawang526").id
 				# myid = 173325385
+
+				entry = {"TWEET_ID": source.id, "AUTHOR": source.id, 
+						"URL": url.expanded_url, "RTS":{}, "LIKES":{}} # if this is a rt'd url
 
 				# are any of them connected? what's the specific relationship 
 				# just look at who each one follows (friends)
 				rter_i = 0
-				while rter_i < 5:
+				while rter_i < len(rts):
 
 					uid = rts[rter_i]
-					username = api.GetUser(user_id=uid).name
-					print username
+					# username = api.GetUser(user_id=uid).name
+					# print username
 
 					try:
 						friends = api.GetFriendIDs(user_id=uid)
 						followers = api.GetFollowerIDs(user_id=uid)
 
-						print "network rt", set(friends+followers).intersection(set(rts))
-						print "network like", set(friends+followers).intersection(set(likes))
+						network_rt = list(set(friends+followers).intersection(set(rts+[source.user.id])))
+						network_like = list(set(friends+followers).intersection(set(likes+[source.user.id])))
+						
+						print "network rt", network_rt
+						print "network like", network_like
+
+						#only do secondary on those who follow you.
+						tertiary_data = {}
+						tertiary = 0
+						while tertiary < len(followers): 
+							try:
+								tertiary_id = followers[tertiary]
+								# name =  api.GetUser(user_id=tertiary_id).name
+								# print name
+
+								t_friends = api.GetFriendIDs(user_id=tertiary_id)
+								t_followers = api.GetFollowerIDs(user_id=tertiary_id)
+							
+								tertiary_data[tertiary_id] = {"FRIENDS":t_friends, "FOLLOWERS":t_followers}
+							
+								print "tert has", len(t_followers), "followers"
+								tertiary += 1
+							except twitter.error.TwitterError as e:
+								if e[0][0]["code"] != 88:
+									raise e
+								print "t api", api_count % 15, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
+								api_count += 1
+								api = getAPI(api_count) 
+								time.sleep(60)
+
+						entry["RTS"][uid] = {"FRIENDS":friends, "FOLLOWERS":tertiary_data}
+						inter.write(json.dumps(entry["RTS"][uid]))
 
 						rter_i += 1 #only when successful do you move on
 
-					except:
-						print "api", api_count, "is busy"
+					except twitter.error.TwitterError as e:	
+						if e[0][0]["code"] != 88:
+							raise e
+						print "api", api_count % 15, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 						api_count += 1
-						getAPI(api_count) 
-						
-						time.sleep(10)
+						api = getAPI(api_count) 
+						time.sleep(60)
 
 
+				f.write(json.dumps(entry))
 
 
-
-
+				#postprocessing
+				#sitename = (url.expanded_url).split(".") 	#urls[0] type = URL
+				# if (sitename[0][:11] == "https://www" or sitename[0][:10] == "http://www" 
+				# 	or sitename[0][:13] == "https://on"):
+				# 	print sitename[1]
+				# else:
+				# 	print sitename[0][8:]
 
 #print([(s.urls, s.text) for s in statuses])
 
