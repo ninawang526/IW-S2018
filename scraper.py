@@ -136,11 +136,10 @@ for i in range(0, 5):
 						#only do secondary on those who follow you.
 						tertiary_data = {}
 						tertiary = 0
+						print "num tertiaries:", len(followers)
 						while tertiary < len(followers): 
 							try:
 								tertiary_id = followers[tertiary]
-								# name =  api.GetUser(user_id=tertiary_id).name
-								# print name
 
 								t_friends = api.GetFriendIDs(user_id=tertiary_id)
 								t_followers = api.GetFollowerIDs(user_id=tertiary_id)
@@ -151,7 +150,7 @@ for i in range(0, 5):
 								tertiary += 1
 							except twitter.error.TwitterError as e:
 								if e[0][0]["code"] != 88:
-									raise e
+									print e
 								print "t api", api_count % 15, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 								api_count += 1
 								api = getAPI(api_count) 
@@ -164,7 +163,7 @@ for i in range(0, 5):
 
 					except twitter.error.TwitterError as e:	
 						if e[0][0]["code"] != 88:
-							raise e
+							print e
 						print "api", api_count % 15, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 						api_count += 1
 						api = getAPI(api_count) 
