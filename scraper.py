@@ -89,7 +89,7 @@ inter = open("inter.txt", 'a')
 data = {}
 
 #for s in statuses:
-for i in range(0, 5):
+for i in range(0, 1):
 
 	if i >= len(statuses):
 		continue
@@ -152,7 +152,7 @@ for i in range(0, 5):
 							print "t api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 							api_count += 1
 							api = getAPI(api_count) 
-							time.sleep(10)
+							time.sleep(60)
 
 					entry["RTS"][uid] = {"FRIENDS":friends, "FOLLOWERS":tertiary_data}
 					inter.write(json.dumps(entry["RTS"][uid]))
@@ -165,7 +165,7 @@ for i in range(0, 5):
 					print "api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 					api_count += 1
 					api = getAPI(api_count) 
-					time.sleep(10)
+					time.sleep(60)
 
 
 			f.write(json.dumps(entry))
