@@ -198,124 +198,143 @@ access_token_secret18 = "HY7en1wg75nAj1RVTVRfSAKkBDZKcoQC3gLoX92GjZmWi"
 
 # apis = [api11, api12]
 
-def getAPI(i):
-      i = i % 15
+def getAPI(j):
+      i = j % 15
 
       if i == 1:
             return twitter.Api(consumer_key=consumer_key1,
                   consumer_secret=consumer_secret1,
                   access_token_key=access_token_key1,
                   access_token_secret=access_token_secret1,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 2:
             return twitter.Api(consumer_key=consumer_key2,
                   consumer_secret=consumer_secret2,
                   access_token_key=access_token_key2,
                   access_token_secret=access_token_secret2,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 3:
             return twitter.Api(consumer_key=consumer_key3,
                   consumer_secret=consumer_secret3,
                   access_token_key=access_token_key3,
                   access_token_secret=access_token_secret3,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 4:
             return twitter.Api(consumer_key=consumer_key4,
                   consumer_secret=consumer_secret4,
                   access_token_key=access_token_key4,
                   access_token_secret=access_token_secret4,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 5:
             return twitter.Api(consumer_key=consumer_key5,
                   consumer_secret=consumer_secret5,
                   access_token_key=access_token_key5,
                   access_token_secret=access_token_secret5,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 6:
             return twitter.Api(consumer_key=consumer_key6,
                   consumer_secret=consumer_secret6,
                   access_token_key=access_token_key6,
                   access_token_secret=access_token_secret6,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 7:
             return twitter.Api(consumer_key=consumer_key7,
                   consumer_secret=consumer_secret7,
                   access_token_key=access_token_key7,
                   access_token_secret=access_token_secret7,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 8:
             return twitter.Api(consumer_key=consumer_key8,
                   consumer_secret=consumer_secret8,
                   access_token_key=access_token_key8,
                   access_token_secret=access_token_secret8,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 9:
             return twitter.Api(consumer_key=consumer_key9,
                   consumer_secret=consumer_secret9,
                   access_token_key=access_token_key9,
                   access_token_secret=access_token_secret9,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 10:
             return twitter.Api(consumer_key=consumer_key10,
                   consumer_secret=consumer_secret10,
                   access_token_key=access_token_key10,
                   access_token_secret=access_token_secret10,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 11:
             return twitter.Api(consumer_key=consumer_key11,
                   consumer_secret=consumer_secret11,
                   access_token_key=access_token_key11,
                   access_token_secret=access_token_secret11,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 12:
             return twitter.Api(consumer_key=consumer_key12,
                   consumer_secret=consumer_secret12,
                   access_token_key=access_token_key12,
                   access_token_secret=access_token_secret12,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 13:
             return twitter.Api(consumer_key=consumer_key13,
                   consumer_secret=consumer_secret13,
                   access_token_key=access_token_key13,
                   access_token_secret=access_token_secret13,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 14:
             return twitter.Api(consumer_key=consumer_key14,
                   consumer_secret=consumer_secret14,
                   access_token_key=access_token_key14,
                   access_token_secret=access_token_secret14,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 15:
             return twitter.Api(consumer_key=consumer_key15,
                   consumer_secret=consumer_secret15,
                   access_token_key=access_token_key15,
                   access_token_secret=access_token_secret15,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 16:
             return twitter.Api(consumer_key=consumer_key16,
                   consumer_secret=consumer_secret16,
                   access_token_key=access_token_key16,
                   access_token_secret=access_token_secret16,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 17:
             return twitter.Api(consumer_key=consumer_key17,
                   consumer_secret=consumer_secret17,
                   access_token_key=access_token_key17,
                   access_token_secret=access_token_secret17,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
       elif i == 18:
             return twitter.Api(consumer_key=consumer_key18,
                   consumer_secret=consumer_secret18,
                   access_token_key=access_token_key18,
                   access_token_secret=access_token_secret18,
-                  sleep_on_rate_limit=False)
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True)
 
       else:
             return twitter.Api(consumer_key=consumer_key1,
                   consumer_secret=consumer_secret1,
                   access_token_key=access_token_key1,
                   access_token_secret=access_token_secret1,
-                  sleep_on_rate_limit=False) 
+                  sleep_on_rate_limit=False,
+                  application_only_auth=True) 
 
       # return apis[(i % len(apis))-1]
 

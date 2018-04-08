@@ -96,89 +96,88 @@ for i in range(0, 5):
 
 	s = statuses[i]	
 
-	if s.retweeted:
-		source = s.retweeted_status
-		
-		if source is not None:
-			urls = source.urls
+	source = s.retweeted_status
+	if source is not None:
 
-			for url in urls:
+		urls = source.urls
 
-				# print retweeters
-				rts = api.GetRetweeters(source.id, count=1000)
-				likes = get_user_ids_of_post_likes(source.id)
+		for url in urls:
 
-				# my_id = api.GetUser(screen_name="ninawang526").id
-				# myid = 173325385
+			# print retweeters
+			rts = api.GetRetweeters(source.id, count=1000)
+			likes = get_user_ids_of_post_likes(source.id)
 
-				entry = {"TWEET_ID": source.id, "AUTHOR": source.id, 
-						"URL": url.expanded_url, "RTS":{}, "LIKES":{}} # if this is a rt'd url
+			# my_id = api.GetUser(screen_name="ninawang526").id
+			# myid = 173325385
 
-				# are any of them connected? what's the specific relationship 
-				# just look at who each one follows (friends)
-				rter_i = 0
-				while rter_i < len(rts):
+			entry = {"TWEET_ID": source.id, "AUTHOR": source.id, 
+					"URL": url.expanded_url, "RTS":{}, "LIKES":{}} # if this is a rt'd url
 
-					uid = rts[rter_i]
-					# username = api.GetUser(user_id=uid).name
-					print "at user", uid
+			# are any of them connected? what's the specific relationship 
+			# just look at who each one follows (friends)
+			rter_i = 0
+			while rter_i < len(rts):
 
-					try:
-						friends = api.GetFriendIDs(user_id=uid)
-						followers = api.GetFollowerIDs(user_id=uid)
+				uid = rts[rter_i]
+				# username = api.GetUser(user_id=uid).name
+				print "at user", uid
 
-						# network_rt = list(set(friends+followers).intersection(set(rts+[source.user.id])))
-						# network_like = list(set(friends+followers).intersection(set(likes+[source.user.id])))
+				try:
+					friends = api.GetFriendIDs(user_id=uid)
+					followers = api.GetFollowerIDs(user_id=uid)
+
+					# network_rt = list(set(friends+followers).intersection(set(rts+[source.user.id])))
+					# network_like = list(set(friends+followers).intersection(set(likes+[source.user.id])))
+					
+					# print "network rt", network_rt
+					# print "network like", network_like
+
+					#only do secondary on those who follow you.
+					tertiary_data = {}
+					tertiary = 0
+					while tertiary < len(followers): 
+						try:
+							tertiary_id = followers[tertiary]
+
+							t_friends = api.GetFriendIDs(user_id=tertiary_id)
+							t_followers = api.GetFollowerIDs(user_id=tertiary_id)
 						
-						# print "network rt", network_rt
-						# print "network like", network_like
+							tertiary_data[tertiary_id] = {"FRIENDS":t_friends, "FOLLOWERS":t_followers}
+						
+							print "tert ", tertiary, "/", len(followers), "has", len(t_followers), "followers"
+							tertiary += 1
+						except twitter.error.TwitterError as e:
+							if e[0][0]["code"] != 88:
+								print e
+							print "t api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
+							api_count += 1
+							api = getAPI(api_count) 
+							time.sleep(10)
 
-						#only do secondary on those who follow you.
-						tertiary_data = {}
-						tertiary = 0
-						while tertiary < len(followers): 
-							try:
-								tertiary_id = followers[tertiary]
+					entry["RTS"][uid] = {"FRIENDS":friends, "FOLLOWERS":tertiary_data}
+					inter.write(json.dumps(entry["RTS"][uid]))
 
-								t_friends = api.GetFriendIDs(user_id=tertiary_id)
-								t_followers = api.GetFollowerIDs(user_id=tertiary_id)
-							
-								tertiary_data[tertiary_id] = {"FRIENDS":t_friends, "FOLLOWERS":t_followers}
-							
-								print "tert ", tertiary, "/", len(followers), "has", len(t_followers), "followers"
-								tertiary += 1
-							except twitter.error.TwitterError as e:
-								if e[0][0]["code"] != 88:
-									print e
-								print "t api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
-								api_count += 1
-								api = getAPI(api_count) 
-								time.sleep(60)
+					rter_i += 1 #only when successful do you move on
 
-						entry["RTS"][uid] = {"FRIENDS":friends, "FOLLOWERS":tertiary_data}
-						inter.write(json.dumps(entry["RTS"][uid]))
-
-						rter_i += 1 #only when successful do you move on
-
-					except twitter.error.TwitterError as e:	
-						if e[0][0]["code"] != 88:
-							print e
-						print "api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
-						api_count += 1
-						api = getAPI(api_count) 
-						time.sleep(60)
+				except twitter.error.TwitterError as e:	
+					if e[0][0]["code"] != 88:
+						print e
+					print "api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
+					api_count += 1
+					api = getAPI(api_count) 
+					time.sleep(10)
 
 
-				f.write(json.dumps(entry))
+			f.write(json.dumps(entry))
 
 
-				#postprocessing
-				#sitename = (url.expanded_url).split(".") 	#urls[0] type = URL
-				# if (sitename[0][:11] == "https://www" or sitename[0][:10] == "http://www" 
-				# 	or sitename[0][:13] == "https://on"):
-				# 	print sitename[1]
-				# else:
-				# 	print sitename[0][8:]
+			#postprocessing
+			#sitename = (url.expanded_url).split(".") 	#urls[0] type = URL
+			# if (sitename[0][:11] == "https://www" or sitename[0][:10] == "http://www" 
+			# 	or sitename[0][:13] == "https://on"):
+			# 	print sitename[1]
+			# else:
+			# 	print sitename[0][8:]
 
 #print([(s.urls, s.text) for s in statuses])
 
