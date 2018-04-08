@@ -178,6 +178,20 @@ access_token_secret15 = "zEfbo35gbbHxOpKaQz3gy8goi0Shkz8jZteU2BDZc0qmc"
 #                   access_token_secret=access_token_secret15,
 #                   sleep_on_rate_limit=False)
 
+consumer_key16 = "upjK4iqHlIYJU2g7CmdpVjIF4"
+consumer_secret16 = "pfQSkThQoYgzizoB0CytAmragsK4D53wqxy5sGc4wIfMtxxpPU"
+access_token_key16 = "173325385-4lF1EW2tenI4M7HjGo6PX6O5gP3IHBw1xi2f5BfQ"
+access_token_secret16 = "Y8mal3dbEPvXTT3Guu4V9RXbtsQWO5xVquTeRAodjhuom"
+
+consumer_key17 = "BEfjwkgaCPKHOZdbCK96RSGMH"
+consumer_secret17 = "KcypzJR1tJwBLMSYDHVtuBOF4Ptpn9iPkwJAJiGeaiokYKs2RC"
+access_token_key17 = "173325385-0Zc2ibWltsAC66JucGP0hyaJ2v2XLDxf1JAvfYd0"
+access_token_secret17 = "p3ciLB0dByCL4FkJrJMMqgo1tozkwg2jdYZBxTnrlYYxP"
+
+consumer_key18 = "WpLGb1jAHgxQw41AKAsNHGlOb"
+consumer_secret18 = "lsFEN47IB9ZwGRvb2qXXXGw4KpPnl33vljycvh6B69GcikNnU0"
+access_token_key18 = "173325385-KHvIPEzVNA0VYwBXt68xZ7dcPqS1gVBNAzXWrfix"
+access_token_secret18 = "HY7en1wg75nAj1RVTVRfSAKkBDZKcoQC3gLoX92GjZmWi"
 # smallapi = api1
 # apis = [api2, api3, api4, api5, api6, api7, api8, api9, api10,
 #       api11, api12, api13, api14, api15]
@@ -277,7 +291,24 @@ def getAPI(i):
                   access_token_key=access_token_key15,
                   access_token_secret=access_token_secret15,
                   sleep_on_rate_limit=False)
-
+      elif i == 16:
+            return twitter.Api(consumer_key=consumer_key16,
+                  consumer_secret=consumer_secret16,
+                  access_token_key=access_token_key16,
+                  access_token_secret=access_token_secret16,
+                  sleep_on_rate_limit=False)
+      elif i == 17:
+            return twitter.Api(consumer_key=consumer_key17,
+                  consumer_secret=consumer_secret17,
+                  access_token_key=access_token_key17,
+                  access_token_secret=access_token_secret17,
+                  sleep_on_rate_limit=False)
+      elif i == 18:
+            return twitter.Api(consumer_key=consumer_key18,
+                  consumer_secret=consumer_secret18,
+                  access_token_key=access_token_key18,
+                  access_token_secret=access_token_secret18,
+                  sleep_on_rate_limit=False)
 
       else:
             return twitter.Api(consumer_key=consumer_key1,

@@ -121,22 +121,21 @@ for i in range(0, 5):
 
 					uid = rts[rter_i]
 					# username = api.GetUser(user_id=uid).name
-					# print username
+					print "at user", uid
 
 					try:
 						friends = api.GetFriendIDs(user_id=uid)
 						followers = api.GetFollowerIDs(user_id=uid)
 
-						network_rt = list(set(friends+followers).intersection(set(rts+[source.user.id])))
-						network_like = list(set(friends+followers).intersection(set(likes+[source.user.id])))
+						# network_rt = list(set(friends+followers).intersection(set(rts+[source.user.id])))
+						# network_like = list(set(friends+followers).intersection(set(likes+[source.user.id])))
 						
-						print "network rt", network_rt
-						print "network like", network_like
+						# print "network rt", network_rt
+						# print "network like", network_like
 
 						#only do secondary on those who follow you.
 						tertiary_data = {}
 						tertiary = 0
-						print "num tertiaries:", len(followers)
 						while tertiary < len(followers): 
 							try:
 								tertiary_id = followers[tertiary]
@@ -146,12 +145,12 @@ for i in range(0, 5):
 							
 								tertiary_data[tertiary_id] = {"FRIENDS":t_friends, "FOLLOWERS":t_followers}
 							
-								print "tert has", len(t_followers), "followers"
+								print "tert ", tertiary, "/", len(followers), "has", len(t_followers), "followers"
 								tertiary += 1
 							except twitter.error.TwitterError as e:
 								if e[0][0]["code"] != 88:
 									print e
-								print "t api", api_count % 15, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
+								print "t api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 								api_count += 1
 								api = getAPI(api_count) 
 								time.sleep(60)
@@ -164,7 +163,7 @@ for i in range(0, 5):
 					except twitter.error.TwitterError as e:	
 						if e[0][0]["code"] != 88:
 							print e
-						print "api", api_count % 15, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
+						print "api", api_count % 18, "is busy at", time.strftime("%H:%M:%S", time.gmtime()) 
 						api_count += 1
 						api = getAPI(api_count) 
 						time.sleep(60)
