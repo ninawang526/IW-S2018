@@ -70,21 +70,13 @@ def ffuser(uid, api, use_bom=False):
 
 		if scores["scores"]["english"] < 0.6:
 			# friends = api.GetFriendIDs(user_id=uid,count=1000,total_count=1000)
-			followers = api.GetFollowerIDs(user_id=uid,count=1000,total_count=1000)
+			followers = api.GetFollowerIDs(user_id=uid,count=500,total_count=500)
 			return (num_friends, num_followers, followers)
 		else:
 			return None
 	else:
-		followers = api.GetFollowerIDs(user_id=uid,count=1000,total_count=1000)
+		followers = api.GetFollowerIDs(user_id=uid,count=500,total_count=500)
 		return (num_friends, num_followers, followers)
-
-
-
-def getfriendsfollowers():
-	api_count = 0
-	api = getAPI(api_count)
-
-	api.InitializeRateLimit()
 
 
 	# all_news_sites = []
@@ -99,9 +91,24 @@ def getfriendsfollowers():
 
 	#for item in fake_news_sites:
 		#print item
+def continue_user(e):
+	print e
+	try:
+		if e[0][0]["code"] == 88:
+			return False
+		else:
+			return True
+	except:
+		return True
+
+
+def getfriendsfollowers():
+	api_count = 0
+	api = getAPI(api_count)
+
+	api.InitializeRateLimit()
 
 	statuses = api.GetUserTimeline(screen_name="ninawang526",count=200)
-
 
 	f = open("retweetdata.txt", 'a')
 	inter = open("interrtdata.txt", 'a')
@@ -118,174 +125,169 @@ def getfriendsfollowers():
 
 		source = s.retweeted_status #fix fix fix -- if it's your own post?
 		if source is not None:
-			for url in source.urls:
 
-				author = source.user.id 
+			author = source.user.id 
+			created_at = source.created_at
+			urls = [url.expanded_url for url in source.urls]
 
-				# print retweeters & likers
-				rts = api.GetRetweeters(source.id, count=1000) + [author]
-				likes = get_user_ids_of_post_likes(source.id)
+			# if url not news/fake news, continue.
 
-				entry = {"TWEET_ID": source.id, "AUTHOR": author, 
-						"URL": url.expanded_url, "RTS":{}, "LIKES":likes} # if this is a rt'd url
+			print "source created at", created_at
 
-				# for sake of computation, also include author in the rts
+			# print retweeters & likers
+			rt_statuses = api.GetRetweets(source.id, count=1000) #+ [author]
 
-				# are any of them connected? what's the specific relationship 
-				# just look at who each one follows (friends)
-				rter_i = 0
-				while rter_i < len(rts): # primary = retweeters
+			rts = [author]
+			times = {author:created_at}
+			for s in rt_statuses:
+				uid = str(s.user.id)
+				rts.append(uid)
+				times[uid] = s.created_at
 
-					uid = rts[rter_i]
-					print "at user", rter_i, "/", len(rts), "uid =", uid
+			likes = get_user_ids_of_post_likes(source.id)
 
-					try:
-						res = ffuser(uid, api, use_bom=True)
-						if res is not None:
-							num_friends, num_followers, followers = res
-						else:
-							rter_i += 1
-							continue
-						
-						sec_data = {}
-						sec_i = 0
-						while sec_i < len(followers):  # secondary = followers of retweeters
-							
-							sec_id = followers[sec_i]
+			# entry for each status, indexed by status_id
+			status_entry = {"TIME":created_at,"AUTHOR": author, 
+							"URL":urls, "RTS":{}, "LIKES":likes} # if this is a rt'd url
 
-							try:
-								sec_res = ffuser(sec_id, api)
-								if sec_res is not None:
-									sec_num_friends, sec_num_followers, sec_followers = sec_res
-								else:
-									sec_i += 1
-									continue
-								
-								sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends}, 
-											"FOLLOWERS":{"count":sec_num_followers, "ids":sec_followers}}
-							
-								print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
-								sec_i += 1
 
-							except twitter.error.TwitterError as e:
-								print e
-								try:
-									l = e[0][0]["message"]
-								except:
-									print "NOTAUTH"
-									sec_i += 1
-								api_count += 1
-								new_api = rate_limit(api, api_count)
-								api = new_api
+			# just look at who each one follows (friends)
+			rter_i = 0
+			while rter_i < len(rts): # primary = retweeters
 
-						entry["RTS"][uid] = {"FRIENDS":{"count":num_friends}, 
-											"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
-						inter.write(json.dumps(entry["RTS"][uid]))
+				# if rter_i == 5:
+				# 	break
 
+				uid = rts[rter_i]
+				print "at rter", rter_i, "/", len(rts), "uid =", uid, "created_at", times[uid]
+
+				try:
+					res = ffuser(uid, api, use_bom=True)
+					if res is not None:
+						num_friends, num_followers, followers = res
+					else:
 						rter_i += 1
+						continue
+					
+					sec_data = {}
+					sec_i = 0
+					while sec_i < len(followers):  # secondary = followers of retweeters
+						
+						# if sec_i == 5:
+						# 	break
 
-					except twitter.error.TwitterError as e:
-						print e
+						sec_id = followers[sec_i]
+
 						try:
-							l = e[0][0]["message"]
-						except:
-							print "NOTAUTH"
-							rter_i += 1
-						api_count += 1
-						new_api = rate_limit(api, api_count)
-						api = new_api
+							sec_res = ffuser(sec_id, api)
+							if sec_res is not None:
+								sec_num_friends, sec_num_followers, sec_followers = sec_res
+							else:
+								sec_i += 1
+								continue
+							
+							# ~~~ ONLY FIVE!!!! ~~~
+							sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends}, 
+										"FOLLOWERS":{"count":sec_num_followers, "ids":sec_followers}}
+						
+							print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
+							sec_i += 1
 
-				f.write(json.dumps(entry))
+						except twitter.error.TwitterError as e:
+							if continue_user(e):
+								sec_i += 1
+							api_count += 1
+							new_api = rate_limit(api, api_count)
+							api = new_api
 
+					status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends}, 
+												"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
+					rter_i += 1
 
-def find_relations(networks):
-	# next, for each status & each rt_network, find interrelations of people associated with it
+				except twitter.error.TwitterError as e:
+					if continue_user(e):
+						rter_i += 1
+					api_count += 1
+					new_api = rate_limit(api, api_count)
+					api = new_api
+
+			data[source.id] = status_entry
+			inter.write(json.dumps(status_entry)) # writing for each status
+			
+		f.write(json.dumps(data)) # writing for all statuses	
 	
-	matrices = {}
+	return data
+
+
+# for one status, find network-specific relations
+def specific_relationships(status):
+	api_count = 0
+	api = getAPI(api_count)
+	api.InitializeRateLimit()
+
+	f = open("relationship_data.txt", "w")
+	  
+	# first, for each status, get set of all associated with that status
+	status_network = set([status["AUTHOR"]])
+	rters = status["RTS"] 
+	
+	for uid in rters:
+		user = rters[uid] 
+		# add rter's followers and rter
+		network = user["FOLLOWERS"]["ids"].keys() + [uid]
+		status_network.update(set(network))
+
+	print "network:", status_network
+
+
+	# next, for each status, find interrelations of people associated with it
+	relations = {}
+	users = list(status_network)
+	
 	# 0 = no relationship
 	# 1 = ui following uj
 	# 2 = uj following ui
 	# 3 = mutual
 
-	i_network = 0
-	network_keys = networks.keys()
+	ui = 0 
+	while ui < len(users):
 
-	while i_network < len(network_keys): # for every status_network
-		
-		matrix = {}
+		print "finding", ui, "/", len(users)
 
-		status_id = network_keys[i_network]
-		users = list(networks[status_id])
-		
-		ui = 0 
-		while ui < len(users): # for rter_network
+		uj = ui + 1
+		while uj < len(users):
+			try:
+				rel = api.ShowFriendship(source_user_id=users[ui], target_user_id=users[uj])["relationship"]
+				
+				val = 0
+				if rel["source"]["following"] and rel["source"]["followed_by"]: 
+					val = 3
+				elif rel["source"]["followed_by"]:
+					val = 2
+				elif rel["source"]["following"]:
+					val = 1
 
-			print "finding", ui, "/", len(users)
-
-			uj = ui + 1
-			while uj < len(users):
-				# find dual relationship
-
-				try:
-					rel = api.ShowFriendship(source_user_id=users[ui], target_user_id=users[uj])["relationship"]
-					
-					val = 0
-					if rel["source"]["following"] and rel["source"]["followed_by"]: 
-						val = 3
-					elif rel["source"]["followed_by"]:
-						val = 2
-					elif rel["source"]["following"]:
-						val = 1
-
-					if users[ui] in matrix:
-						matrix[users[ui]][users[uj]] = val
+				# store only if an edge exists
+				if val != 0: 
+					if users[ui] in relations:
+						relations[users[ui]][users[uj]] = val
 					else:
-						matrix[users[ui]] = {users[uj]:val}
+						relations[users[ui]] = {users[uj]:val}
 
-					print users[ui], users[uj], val
+				# print users[ui], users[uj], val
+				uj += 1
 
+			except twitter.error.TwitterError as e:
+				if continue_user(e):
 					uj += 1
+				api_count += 1
+				new_api = rate_limit(api, api_count, app_only=False)
+				api = new_api
 
-				except twitter.error.TwitterError as e:
-					api_count += 1
-					new_api = rate_limit(api, e, api_count, app_only=False)
-					api = new_api
+		ui += 1
 
-			ui += 1
-
-		inter_relations.write(json.dumps(matrix))
-		matrices[status_id] = matrix
-		i_network += 1
-
-
-def interrelationships(data):
-	api_count = 0
-	api = getAPI(api_count)
-	api.InitializeRateLimit()
-
-	relations = open("relationship_data.txt", "w")
-	inter_relations = open("inter_relationship_data.txt", "w")
-	  
-	# first, for each status, get set of rters of that status
-	networks = {} # dict of dicts, indexed by status id
-	for status in data: #data is a list of dictionary entries
-		
-		status_network = {} #dict of rter_networks
-		rters = status["RTS"] + status["LIKES"] 
-		
-		# for every rter-centered branch
-		for uid in rters:
-			rter_network = rters[uid]["FOLLOWERS"]["ids"] + [uid]
-			status_network[uid] = rter_network # per rter 
-
-		networks[status["TWEET_ID"]] = status_network  #dict of status_networks
-
-	print "all networks:", networks
-
-	
-	print "DONE"
-	relations.write(json.dumps(matrices))
-
+	f.write(json.dumps(relations))
+	return relations
 
 
 
