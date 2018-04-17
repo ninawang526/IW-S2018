@@ -1,6 +1,5 @@
-# import requests
-
 import twitter, botometer
+import requests
 import json
 import csv
 import time
@@ -10,11 +9,7 @@ import urllib2
 import re
 
 
-
-#users = api.GetFriends(screen_name="MeghanSumz12")
-
-#print "num statuses: ", (statuses[-1].created_at)
-
+# scrape for likes of a status
 #https://stackoverflow.com/questions/28982850/twitter-api-getting-list-of-users-who-favorited-a-status
 def get_user_ids_of_post_likes(post_id):
     try:
@@ -29,6 +24,7 @@ def get_user_ids_of_post_likes(post_id):
         return False
 
 
+# handles setting up new apis
 def rate_limit(api, apc, app_only=False):
 	rl = api.CheckRateLimit("/friends/ids.json")
 	print "current time:", time.strftime("%H:%M:%S", time.gmtime()) 
@@ -42,6 +38,19 @@ def rate_limit(api, apc, app_only=False):
 	return new_api
 
 
+# error handling		
+def continue_user(e):
+	print e
+	try:
+		if e[0][0]["code"] == 88:
+			return False
+		else:
+			return True
+	except:
+		return True
+
+
+# botometer intialization
 def get_bom():
 	bom_auth = { #api0
 		"consumer_key": "WpLGb1jAHgxQw41AKAsNHGlOb",
@@ -55,7 +64,7 @@ def get_bom():
                           **bom_auth)
 
 
-# return {"count":,"ids":}
+# get friends & followers of a particular user; return {"count":,"ids":}
 def ffuser(uid, api, use_bom=False):
 	user = api.GetUser(user_id=uid)
 	num_friends = user.friends_count
@@ -68,15 +77,12 @@ def ffuser(uid, api, use_bom=False):
 		except:
 			return None
 
-		if scores["scores"]["english"] < 0.6:
-			# friends = api.GetFriendIDs(user_id=uid,count=1000,total_count=1000)
-			followers = api.GetFollowerIDs(user_id=uid,count=500,total_count=500)
-			return (num_friends, num_followers, followers)
-		else:
+		if scores["scores"]["english"] >= 0.6:
 			return None
-	else:
-		followers = api.GetFollowerIDs(user_id=uid,count=500,total_count=500)
-		return (num_friends, num_followers, followers)
+
+	followers = api.GetFollowerIDs(user_id=uid,count=250,total_count=250)
+	friends = api.GetFriendIDs(user_id=uid,count=250,total_count=250)
+	return (num_friends, friends, num_followers, followers)
 
 
 	# all_news_sites = []
@@ -91,17 +97,9 @@ def ffuser(uid, api, use_bom=False):
 
 	#for item in fake_news_sites:
 		#print item
-def continue_user(e):
-	print e
-	try:
-		if e[0][0]["code"] == 88:
-			return False
-		else:
-			return True
-	except:
-		return True
 
 
+# get friends & follower network of all statuses
 def getfriendsfollowers():
 	api_count = 0
 	api = getAPI(api_count)
@@ -110,8 +108,8 @@ def getfriendsfollowers():
 
 	statuses = api.GetUserTimeline(screen_name="ninawang526",count=200)
 
-	f = open("retweetdata.txt", 'a')
-	inter = open("interrtdata.txt", 'a')
+	f = open("retweetdata.txt", 'w')
+	inter = open("interrtdata.txt", 'w')
 
 	data = {}
 
@@ -162,9 +160,9 @@ def getfriendsfollowers():
 				print "at rter", rter_i, "/", len(rts), "uid =", uid, "created_at", times[uid]
 
 				try:
-					res = ffuser(uid, api, use_bom=True)
+					res = ffuser(uid, api)
 					if res is not None:
-						num_friends, num_followers, followers = res
+						num_friends, friends, num_followers, followers = res
 					else:
 						rter_i += 1
 						continue
@@ -181,14 +179,14 @@ def getfriendsfollowers():
 						try:
 							sec_res = ffuser(sec_id, api)
 							if sec_res is not None:
-								sec_num_friends, sec_num_followers, sec_followers = sec_res
+								sec_num_friends, sec_friends, sec_num_followers, sec_followers = sec_res
 							else:
 								sec_i += 1
 								continue
 							
 							# ~~~ ONLY FIVE!!!! ~~~
-							sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends}, 
-										"FOLLOWERS":{"count":sec_num_followers, "ids":sec_followers}}
+							sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends}, 
+										"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers}}
 						
 							print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
 							sec_i += 1
@@ -196,20 +194,37 @@ def getfriendsfollowers():
 						except twitter.error.TwitterError as e:
 							if continue_user(e):
 								sec_i += 1
+							else:
+								api_count += 1
+								new_api = rate_limit(api, api_count)
+								api = new_api
+
+						except requests.exceptions.ConnectionError:
+							time.sleep(60 * 15)
 							api_count += 1
 							new_api = rate_limit(api, api_count)
 							api = new_api
 
-					status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends}, 
+					status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends, "ids":friends}, 
 												"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
 					rter_i += 1
 
 				except twitter.error.TwitterError as e:
 					if continue_user(e):
 						rter_i += 1
+					else:
+						api_count += 1
+						new_api = rate_limit(api, api_count)
+						api = new_api
+				
+				except requests.exceptions.ConnectionError:
+					time.sleep(60 * 15)
 					api_count += 1
 					new_api = rate_limit(api, api_count)
 					api = new_api
+				
+				
+
 
 			data[source.id] = status_entry
 			inter.write(json.dumps(status_entry)) # writing for each status
@@ -225,7 +240,7 @@ def specific_relationships(status):
 	api = getAPI(api_count)
 	api.InitializeRateLimit()
 
-	f = open("relationship_data.txt", "w")
+	f = open("specific_relationship_data.txt", "w")
 	  
 	# first, for each status, get set of all associated with that status
 	status_network = set([status["AUTHOR"]])
@@ -280,8 +295,15 @@ def specific_relationships(status):
 			except twitter.error.TwitterError as e:
 				if continue_user(e):
 					uj += 1
+				else:
+					api_count += 1
+					new_api = rate_limit(api, api_count, app_only=False)
+					api = new_api
+
+			except requests.exceptions.ConnectionError:
+				time.sleep(60 * 15)
 				api_count += 1
-				new_api = rate_limit(api, api_count, app_only=False)
+				new_api = rate_limit(api, api_count)
 				api = new_api
 
 		ui += 1
@@ -290,27 +312,100 @@ def specific_relationships(status):
 	return relations
 
 
-
-
-
-if __name__ == '__main__':
+def relations_check(root, subtree):
 	api_count = 0
 	api = getAPI(api_count)
 	api.InitializeRateLimit()
 
-	uid = "940304486026940417"
-
-	try:
-		user = api.GetUser(user_id=uid)
+	relations = {}
+	# 0 = no relationship
+	# 1 = ui following uj
+	# 2 = uj following ui
+	# 3 = mutual
 	
-		followers = api.GetFollowerIDs(user_id=uid,count=1000,total_count=1000)
-		print "len", len(followers)	
+	i = 0
+	while i < len(subtree):
+		source = root 
+		dest = subtree[i]
 
-	except twitter.error.TwitterError as e:
 		try:
-			print e[0][0]["message"]
-		except:
-			print "NOTAUTH"	
+			rel = api.ShowFriendship(source_user_id=source, target_user_id=dest)["relationship"]
+			
+			val = 0
+			if rel["source"]["following"] and rel["source"]["followed_by"]: 
+				val = 3
+			elif rel["source"]["followed_by"]:
+				val = 2
+			elif rel["source"]["following"]:
+				val = 1
+
+			# store only if an edge exists
+			if val != 0: 
+				if source in relations:
+					relations[source][dest] = val
+				else:
+					relations[source] = {dest:val}
+
+			print source, dest, i, val
+			i += 1
+
+		except twitter.error.TwitterError as e:
+			if continue_user(e):
+				i += 1
+			else:
+				api_count += 1
+				new_api = rate_limit(api, api_count, app_only=False)
+				api = new_api
+
+		except requests.exceptions.ConnectionError:
+			time.sleep(60 * 15)
+			api_count += 1
+			new_api = rate_limit(api, api_count)
+			api = new_api
+
+	return relations
+
+
+# for one status, find general relations of each user exposed to status
+def general_relationships(status):
+	api_count = 0
+	api = getAPI(api_count)
+	api.InitializeRateLimit()
+
+	f = open("general_relationship_data.txt", "w")
+	  
+	# for each exposed user, get all those who follow them, see if mutual
+	relations = {}
+	rters = status["RTS"] 
+	
+	# author does NOT count as a secondary. only rters (primary = author)
+	# and followers of rters (primary = rter)
+	for uid in rters:
+		rter = rters[uid]
+
+		secondaries = rter["FOLLOWERS"]["ids"]
+		sec_relations = relations_check(uid, secondaries.keys())
+		relations.update(sec_relations)
+
+		for sec in secondaries:
+			tertiaries = secondaries[sec]["FRIENDS"]["ids"]
+			tert_relations = relations_check(sec, tertiaries)
+			relations.update(tert_relations)
+
+	f.write(json.dumps(relations))
+	return relations
+
+
+if __name__ == '__main__':
+	rtdata = open("retweetdata.txt", "r").read()
+	retweet_data = json.loads(rtdata)
+
+	for s_id in retweet_data:
+		status_network = retweet_data[s_id]
+		
+		relations = general_relationships(status_network)
+		print relations
+
 
 
 
