@@ -1,6 +1,6 @@
 import twitter, botometer
 import requests
-import json
+import json, gzip, os.path
 import csv
 import time
 from apps import getAPI, lenapis
@@ -108,8 +108,10 @@ def getfriendsfollowers():
 
 	statuses = api.GetUserTimeline(screen_name="ninawang526",count=200)
 
-	f = open("retweetdata.txt", 'w')
-	inter = open("interrtdata.txt", 'w')
+	
+	save_path = "/Users/ninawang/iw/rters/"
+	f = gzip.open("retweetdata.txt.gz", 'wb')
+
 
 	data = {}
 
@@ -200,7 +202,7 @@ def getfriendsfollowers():
 								api = new_api
 
 						except requests.exceptions.ConnectionError:
-							time.sleep(60 * 15)
+							time.sleep(60)
 							api_count += 1
 							new_api = rate_limit(api, api_count)
 							api = new_api
@@ -208,6 +210,11 @@ def getfriendsfollowers():
 					status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends, "ids":friends}, 
 												"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
 					rter_i += 1
+
+					complete_name = os.path.join(save_path, str(uid)+".txt.gz")
+					inter = gzip.open(complete_name, 'wb')
+					inter.write(json.dumps(status_entry["RTS"][uid])) # writing for each rter
+					inter.close()
 
 				except twitter.error.TwitterError as e:
 					if continue_user(e):
@@ -218,18 +225,14 @@ def getfriendsfollowers():
 						api = new_api
 				
 				except requests.exceptions.ConnectionError:
-					time.sleep(60 * 15)
+					time.sleep(60)
 					api_count += 1
 					new_api = rate_limit(api, api_count)
 					api = new_api
 				
-				
-
-
 			data[source.id] = status_entry
-			inter.write(json.dumps(status_entry)) # writing for each status
-			
-		f.write(json.dumps(data)) # writing for all statuses	
+			f.write(json.dumps(data)) # writing for each status	
+			f.close()
 	
 	return data
 
@@ -301,7 +304,7 @@ def specific_relationships(status):
 					api = new_api
 
 			except requests.exceptions.ConnectionError:
-				time.sleep(60 * 15)
+				time.sleep(60)
 				api_count += 1
 				new_api = rate_limit(api, api_count)
 				api = new_api
@@ -358,7 +361,7 @@ def relations_check(root, subtree):
 				api = new_api
 
 		except requests.exceptions.ConnectionError:
-			time.sleep(60 * 15)
+			time.sleep(60)
 			api_count += 1
 			new_api = rate_limit(api, api_count)
 			api = new_api
