@@ -145,8 +145,8 @@ def getfriendsfollowers(status_id):
 	rter_i = 0
 	while rter_i < len(rts): # primary = retweeters
 
-		if rter_i == 5:
-			break
+		# if rter_i == 5:
+		# 	break
 
 		uid = rts[rter_i]
 		print "at rter", rter_i, "/", len(rts), "uid =", uid, "created_at", times[uid]
@@ -168,8 +168,8 @@ def getfriendsfollowers(status_id):
 			sec_i = 0
 			while sec_i < len(followers):  # secondary = followers of retweeters
 				
-				if sec_i == 5:
-					break
+				# if sec_i == 5:
+				# 	break
 
 				sec_id = followers[sec_i]
 
@@ -187,8 +187,8 @@ def getfriendsfollowers(status_id):
 						continue
 					
 					# ~~~ ONLY FIVE!!!! ~~~
-					sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends[:5]}, 
-								"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers[:5]}}
+					sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends}, 
+								"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers}}
 				
 					print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
 					sec_i += 1
