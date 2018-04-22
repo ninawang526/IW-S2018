@@ -374,10 +374,6 @@ def relations_check(root, subtree):
 
 # for one status, find general relations of each user exposed to status
 def general_relationships(status):
-	api_count = 9
-	api = getAPI(api_count)
-	api.InitializeRateLimit()
-
 	# for each exposed user, get all those who follow them, see if mutual
 	relations = {}
 	rters = status["RTS"] 
@@ -399,6 +395,9 @@ def general_relationships(status):
 	f = gzip.open("general_relationship_data.txt.gz", "w")
 	f.write(json.dumps(relations))
 	return relations
+
+
+
 
 
 if __name__ == '__main__':
