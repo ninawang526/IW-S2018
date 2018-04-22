@@ -30,7 +30,7 @@ def rate_limit(api, apc, app_only=False):
 	print "current time:", time.strftime("%H:%M:%S", time.gmtime()) 
 	print "api", apc % lenapis, "will resume at", time.strftime("%H:%M:%S", time.gmtime(rl[2])), "\n"
 
-	time.sleep(20)
+	time.sleep(30)
 
 	new_api = getAPI(apc, app_only=app_only) 
 	new_api.InitializeRateLimit()
@@ -42,7 +42,7 @@ def rate_limit(api, apc, app_only=False):
 def continue_user(e):
 	print e
 	try:
-		if e[0][0]["code"] == 88:
+		if e[0][0]["code"] == 88 or e[0][0]["code"] == 88:
 			return False
 		else:
 			return True
@@ -99,142 +99,141 @@ def ffuser(uid, api, use_bom=False):
 		#print item
 
 
-# get friends & follower network of all statuses
-def getfriendsfollowers():
+# get friends & follower network of a particular status
+def getfriendsfollowers(status_id):
 	api_count = 0
 	api = getAPI(api_count)
-
 	api.InitializeRateLimit()
 
-	statuses = api.GetUserTimeline(screen_name="ninawang526",count=200)
+	f = gzip.open("retweetdata.txt.gz", 'wb')
+	save_path = "/Users/ninawang/iw/rters/" + str(status_id)
+	if not os.path.exists(save_path):
+		os.makedirs(save_path)
+	
+	ignore = [x.split(".")[0] for x in os.listdir(save_path)]
+
+	s = api.GetStatus(int(status_id))
+	source = s.retweeted_status #fix fix fix -- if it's your own post?
+
+	if source is None:
+		return None 
+
+	#Get info
+	author = source.user.id 
+	created_at = source.created_at
+	urls = [url.expanded_url for url in source.urls]
+	print "source created at", created_at
+
+	# print retweeters & likers
+	likes = get_user_ids_of_post_likes(source.id)
+
+	rt_statuses = api.GetRetweets(source.id, count=1000) 
+	rts = [author]
+	times = {author:created_at}
+	for s in rt_statuses:
+		uid = str(s.user.id)
+		rts.append(uid)
+		times[uid] = s.created_at
 
 	
-	save_path = "/Users/ninawang/iw/rters/"
-	f = gzip.open("retweetdata.txt.gz", 'wb')
+	# entry for each status, indexed by status_id
+	status_entry = {"TIME":created_at,"AUTHOR": author, 
+					"URL":urls, "RTS":{}, "LIKES":likes} # if this is a rt'd url
 
 
-	data = {}
+	# just look at who each one follows (friends)
+	rter_i = 0
+	while rter_i < len(rts): # primary = retweeters
 
-	#for s in statuses:
-	for i in range(0, 1):
+		if rter_i == 5:
+			break
 
-		if i >= len(statuses):
+		uid = rts[rter_i]
+		print "at rter", rter_i, "/", len(rts), "uid =", uid, "created_at", times[uid]
+		
+		if uid in ignore:
+			rter_i += 1
+			print "ignored", uid
 			continue
 
-		s = statuses[i]	
+		try:
+			res = ffuser(uid, api)
+			if res is not None:
+				num_friends, friends, num_followers, followers = res
+			else:
+				rter_i += 1
+				continue
+			
+			sec_data = {}
+			sec_i = 0
+			while sec_i < len(followers):  # secondary = followers of retweeters
+				
+				if sec_i == 5:
+					break
 
-		source = s.retweeted_status #fix fix fix -- if it's your own post?
-		if source is not None:
+				sec_id = followers[sec_i]
 
-			author = source.user.id 
-			created_at = source.created_at
-			urls = [url.expanded_url for url in source.urls]
-
-			# if url not news/fake news, continue.
-
-			print "source created at", created_at
-
-			# print retweeters & likers
-			rt_statuses = api.GetRetweets(source.id, count=1000) #+ [author]
-
-			rts = [author]
-			times = {author:created_at}
-			for s in rt_statuses:
-				uid = str(s.user.id)
-				rts.append(uid)
-				times[uid] = s.created_at
-
-			likes = get_user_ids_of_post_likes(source.id)
-
-			# entry for each status, indexed by status_id
-			status_entry = {"TIME":created_at,"AUTHOR": author, 
-							"URL":urls, "RTS":{}, "LIKES":likes} # if this is a rt'd url
-
-
-			# just look at who each one follows (friends)
-			rter_i = 0
-			while rter_i < len(rts): # primary = retweeters
-
-				# if rter_i == 5:
-				# 	break
-
-				uid = rts[rter_i]
-				print "at rter", rter_i, "/", len(rts), "uid =", uid, "created_at", times[uid]
+				if sec_id in ignore:
+					sec_i += 1
+					print "ignored", sec_id
+					continue
 
 				try:
-					res = ffuser(uid, api)
-					if res is not None:
-						num_friends, friends, num_followers, followers = res
+					sec_res = ffuser(sec_id, api)
+					if sec_res is not None:
+						sec_num_friends, sec_friends, sec_num_followers, sec_followers = sec_res
 					else:
-						rter_i += 1
+						sec_i += 1
 						continue
 					
-					sec_data = {}
-					sec_i = 0
-					while sec_i < len(followers):  # secondary = followers of retweeters
-						
-						# if sec_i == 5:
-						# 	break
-
-						sec_id = followers[sec_i]
-
-						try:
-							sec_res = ffuser(sec_id, api)
-							if sec_res is not None:
-								sec_num_friends, sec_friends, sec_num_followers, sec_followers = sec_res
-							else:
-								sec_i += 1
-								continue
-							
-							# ~~~ ONLY FIVE!!!! ~~~
-							sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends}, 
-										"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers}}
-						
-							print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
-							sec_i += 1
-
-						except twitter.error.TwitterError as e:
-							if continue_user(e):
-								sec_i += 1
-							else:
-								api_count += 1
-								new_api = rate_limit(api, api_count)
-								api = new_api
-
-						except requests.exceptions.ConnectionError:
-							time.sleep(60)
-							api_count += 1
-							new_api = rate_limit(api, api_count)
-							api = new_api
-
-					status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends, "ids":friends}, 
-												"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
-					rter_i += 1
-
-					complete_name = os.path.join(save_path, str(uid)+".txt.gz")
-					inter = gzip.open(complete_name, 'wb')
-					inter.write(json.dumps(status_entry["RTS"][uid])) # writing for each rter
-					inter.close()
+					# ~~~ ONLY FIVE!!!! ~~~
+					sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends[:5]}, 
+								"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers[:5]}}
+				
+					print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
+					sec_i += 1
 
 				except twitter.error.TwitterError as e:
 					if continue_user(e):
-						rter_i += 1
+						sec_i += 1
 					else:
 						api_count += 1
 						new_api = rate_limit(api, api_count)
 						api = new_api
-				
+
 				except requests.exceptions.ConnectionError:
 					time.sleep(60)
 					api_count += 1
 					new_api = rate_limit(api, api_count)
 					api = new_api
-				
-			data[source.id] = status_entry
-			f.write(json.dumps(data)) # writing for each status	
-			f.close()
-	
-	return data
+
+			status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends, "ids":friends}, 
+										"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
+			rter_i += 1
+
+			complete_name = os.path.join(save_path, str(uid)+".txt.gz")
+			inter = gzip.open(complete_name, 'wb')
+			inter.write(json.dumps(status_entry["RTS"][uid])) # writing for each rter
+			inter.close()
+
+		except twitter.error.TwitterError as e:
+			if continue_user(e):
+				rter_i += 1
+			else:
+				api_count += 1
+				new_api = rate_limit(api, api_count)
+				api = new_api
+		
+		except requests.exceptions.ConnectionError:
+			time.sleep(60)
+			api_count += 1
+			new_api = rate_limit(api, api_count)
+			api = new_api
+		
+	f.write(json.dumps(status_entry)) # writing for each status	
+	f.close()
+
+	return status_entry
 
 
 # for one status, find network-specific relations
@@ -449,9 +448,6 @@ plan of action:
 scp -i ~/iw/iw2.pem ~/iw  ec2-user@ec2-18-188-192-246.us-east-2.compute.amazonaws.com:~/data/
 
 """
-
-
-
 
 
 
