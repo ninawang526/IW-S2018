@@ -42,7 +42,7 @@ def rate_limit(api, apc, app_only=False):
 def continue_user(e):
 	print e
 	try:
-		if e[0][0]["code"] == 88 or e[0][0]["code"] == 88:
+		if e[0][0]["code"] == 88: #only when rate limit exceed, stay on this user.
 			return False
 		else:
 			return True
@@ -105,18 +105,17 @@ def getfriendsfollowers(status_id):
 	api = getAPI(api_count)
 	api.InitializeRateLimit()
 
-	f = gzip.open("retweetdata.txt.gz", 'wb')
-	save_path = "/Users/ninawang/iw/rters/" + str(status_id)
+	save_path = "./rters/" + str(status_id)
 	if not os.path.exists(save_path):
 		os.makedirs(save_path)
 	
-	ignore = [x.split(".")[0] for x in os.listdir(save_path)]
+	ignore = [int(x.split(".")[0]) for x in os.listdir(save_path)]
 
 	s = api.GetStatus(int(status_id))
 	source = s.retweeted_status #fix fix fix -- if it's your own post?
 
 	if source is None:
-		return None 
+		source = s
 
 	#Get info
 	author = source.user.id 
@@ -211,10 +210,12 @@ def getfriendsfollowers(status_id):
 										"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
 			rter_i += 1
 
+			
 			complete_name = os.path.join(save_path, str(uid)+".txt.gz")
 			inter = gzip.open(complete_name, 'wb')
 			inter.write(json.dumps(status_entry["RTS"][uid])) # writing for each rter
 			inter.close()
+			print "WROTE", str(uid)+".txt.gz"
 
 		except twitter.error.TwitterError as e:
 			if continue_user(e):
@@ -230,6 +231,7 @@ def getfriendsfollowers(status_id):
 			new_api = rate_limit(api, api_count)
 			api = new_api
 		
+	f = gzip.open("retweetdata.txt.gz", 'wb')
 	f.write(json.dumps(status_entry)) # writing for each status	
 	f.close()
 
@@ -238,23 +240,22 @@ def getfriendsfollowers(status_id):
 
 # for one status, find network-specific relations
 def specific_relationships(status):
-	api_count = 0
+	api_count = 9
 	api = getAPI(api_count)
 	api.InitializeRateLimit()
 
-	f = open("specific_relationship_data.txt", "w")
-	  
+	print status.keys()
+
 	# first, for each status, get set of all associated with that status
 	status_network = set([status["AUTHOR"]])
-	rters = status["RTS"] 
+	rters = status["RTS"]
 	
-	for uid in rters:
+	print rters.keys()
+
+	for uid in rters.keys():
 		user = rters[uid] 
-		# add rter's followers and rter
 		network = user["FOLLOWERS"]["ids"].keys() + [uid]
 		status_network.update(set(network))
-
-	print "network:", status_network
 
 
 	# next, for each status, find interrelations of people associated with it
@@ -310,7 +311,9 @@ def specific_relationships(status):
 
 		ui += 1
 
+	f = gzip.open("specific_relationship_data.txt.gz","w")
 	f.write(json.dumps(relations))
+	
 	return relations
 
 
@@ -370,12 +373,10 @@ def relations_check(root, subtree):
 
 # for one status, find general relations of each user exposed to status
 def general_relationships(status):
-	api_count = 0
+	api_count = 9
 	api = getAPI(api_count)
 	api.InitializeRateLimit()
 
-	f = open("general_relationship_data.txt", "w")
-	  
 	# for each exposed user, get all those who follow them, see if mutual
 	relations = {}
 	rters = status["RTS"] 
@@ -394,6 +395,7 @@ def general_relationships(status):
 			tert_relations = relations_check(sec, tertiaries)
 			relations.update(tert_relations)
 
+	f = gzip.open("general_relationship_data.txt.gz", "w")
 	f.write(json.dumps(relations))
 	return relations
 
@@ -445,13 +447,16 @@ plan of action:
 #then go through users who rt.
 
 
-scp -i ~/iw/iw2.pem ~/iw  ec2-user@ec2-18-188-192-246.us-east-2.compute.amazonaws.com:~/data/
+scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/
 
 """
 
+1495646468
+362157378
+885692002591006720
 
 
-
+['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']
 
 
 

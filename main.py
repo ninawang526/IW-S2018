@@ -1,6 +1,6 @@
 import scraper
-import json, os, twitter
-from graph import make_graph
+import json, os, twitter, gzip
+from graph import graph_network
 from apps import getAPI
 
 # api = getAPI(0)
@@ -11,25 +11,22 @@ from apps import getAPI
 statusids = ["987822889817772032"]
 
 for sid in statusids:
-
 	# get the data
-	retweet_data = scraper.getfriendsfollowers(sid)
+	# retweet_data = scraper.getfriendsfollowers(sid)
 
-
-# rtdata = open("sampledata.txt", "r").read()
-# retweet_data = json.loads(rtdata)
-
-# for s_id in retweet_data:
-# 	status_network = retweet_data[s_id]
+	rtdata = open("retweetdata.txt", "r").read()
+	status_data = json.loads(rtdata)
 	
-# 	# relations = scraper.specific_relationships(status_network)
-# 	s_relations = json.loads(open("specific_relationship_data.txt","r").read())
-# 	specific_graph = make_graph(status_network, s_relations)
-# 	specific_graph.save("specific.xml.gz")
+	# relations = scraper.specific_relationships(status_data)
+	# s_relations = json.loads(gzip.open("specific_relationship_data.txt","r").read())
+	
+	# specific_graph = graph_network(status_data, s_relations)
+	# specific_graph.save("specific.xml.gz")
 
-	# g_relations = json.loads(open("general_relationship_data.txt","r").read())
-	# general_graph = make_graph(status_network, relations, general=g_relations)
-	# specific_graph.save("general.xml.gz")
+	relations = scraper.general_relationships(status_data)
+	g_relations = json.loads(open("general_relationship_data.txt","r").read())
+	general_graph = make_graph(status_network, relations, general=g_relations)
+	specific_graph.save("general.xml.gz")
 
 
 # network_data = scraper.interrelationships(rtjson)
