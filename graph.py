@@ -6,7 +6,7 @@ import random
 # 1 = ui following uj
 # 2 = uj following ui
 # 3 = mutual
-def graph_network(status, rel):
+def make_graph(status, rel):
 
 	# An empty graph can be created by instantiating a Graph class:
 	g = Graph()
@@ -43,7 +43,7 @@ def graph_network(status, rel):
 				color[node]="pink"
 			else:
 				color[node] = "white"
-			label[node] = uid
+			label[node] = "" #uid
 			users[uid] = node
 
 	# adding relationship edges
@@ -55,7 +55,7 @@ def graph_network(status, rel):
 			if j not in users:
 				node_j = g.add_vertex()
 				color[node_j] = "white"
-				label[node_j] = j
+				label[node_j] = "" #j
 				users[j] = node_j # IN THE FUTURE, PASS THROUGH SET OF ALL NODES INSTEAD
 			else:
 				node_j = users[j]
@@ -74,15 +74,17 @@ def graph_network(status, rel):
 				e2 = g.add_edge(node_j, node_i)
 
 
-	# pos = sfdp_lxayout(g)
-	# pos = arf_layout(g, max_iter=0)
+	# pos = sfdp_layout(g)
+	pos = arf_layout(g, max_iter=0)
 	# pos = fruchterman_reingold_layout(g, n_iter=1000)
-	pos = radial_tree_layout(g, root)
+	# pos = radial_tree_layout(g, root)
 	graph_draw(g, vertex_fill_color=color, vertex_color=color, vertex_text=label, 
-				vertex_text_position = 0, vertex_size=30,
+				vertex_text_position = 0, vertex_size=10,
 				edge_color="gray", 
 				pos=pos,
 				output_size=(700, 700), output="two-nodes.png")
+
+	return g
 
 
 # status_data = [json.loads(open("sampledata.txt","r").read())]

@@ -105,7 +105,7 @@ def getfriendsfollowers(status_id):
 	api = getAPI(api_count)
 	api.InitializeRateLimit()
 
-	save_path = "./rters/" + str(status_id)
+	save_path = "./rters/" + str(status_id) #CHANGE THIS! IDS CHANGE..???
 	if not os.path.exists(save_path):
 		os.makedirs(save_path)
 	
@@ -121,6 +121,7 @@ def getfriendsfollowers(status_id):
 	author = source.user.id 
 	created_at = source.created_at
 	urls = [url.expanded_url for url in source.urls]
+	print "text:", source.text
 	print "source created at", created_at
 
 	# print retweeters & likers
@@ -144,8 +145,8 @@ def getfriendsfollowers(status_id):
 	rter_i = 0
 	while rter_i < len(rts): # primary = retweeters
 
-		# if rter_i == 5:
-		# 	break
+		if rter_i == 5:
+			break
 
 		uid = rts[rter_i]
 		print "at rter", rter_i, "/", len(rts), "uid =", uid, "created_at", times[uid]
@@ -167,8 +168,8 @@ def getfriendsfollowers(status_id):
 			sec_i = 0
 			while sec_i < len(followers):  # secondary = followers of retweeters
 				
-				# if sec_i == 5:
-				# 	break
+				if sec_i == 5:
+					break
 
 				sec_id = followers[sec_i]
 
@@ -186,8 +187,8 @@ def getfriendsfollowers(status_id):
 						continue
 					
 					# ~~~ ONLY FIVE!!!! ~~~
-					sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends}, 
-								"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers}}
+					sec_data[sec_id] = {"FRIENDS":{"count":sec_num_friends, "ids":sec_friends[:5]}, 
+								"FOLLOWERS":{"count":sec_num_followers,"ids":sec_followers[:5]}}
 				
 					print "sec", sec_i, "/", len(followers), "has", sec_num_friends, "friends"
 					sec_i += 1
@@ -208,9 +209,9 @@ def getfriendsfollowers(status_id):
 
 			status_entry["RTS"][uid] = {"RT_AT":times[uid], "FRIENDS":{"count":num_friends, "ids":friends}, 
 										"FOLLOWERS":{"count":num_followers, "ids":sec_data}}
-			rter_i += 1
-
 			
+			rter_i += 1
+	
 			complete_name = os.path.join(save_path, str(uid)+".txt.gz")
 			inter = gzip.open(complete_name, 'wb')
 			inter.write(json.dumps(status_entry["RTS"][uid])) # writing for each rter
@@ -447,16 +448,10 @@ plan of action:
 #then go through users who rt.
 
 
-scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/
+sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/
 
 """
-
-1495646468
-362157378
-885692002591006720
-
-
-['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']
+# ['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']
 
 
 
