@@ -7,6 +7,72 @@ import metrics
 # 1 = ui following uj
 # 2 = uj following ui
 # 3 = mutual
+
+BLACK = [0,0,0,1]
+WHITE = [1,1,1,1]
+GRAY = [0.709, 0.709, 0.709, 1]
+
+RED = [0.796, 0.062, 0.227, 1]
+PINK = [0.952, 0.588, 0.623, 1]
+
+
+
+def new_vprop(name, t, g):
+	prop = g.new_vertex_property(t)
+	g.vertex_properties[name] = prop
+	return prop
+
+
+def new_eprop(name, t, g):
+	prop = g.new_edge_property(t)
+	g.edge_properties[name] = prop
+	return prop
+
+
+def draw_graph(g):
+	# vertex properties
+	color = g.vertex_properties["color"]
+	node_pen_weight = g.vertex_properties["node_pen_weight"]
+
+	# edge properties
+	edge_pen_weight = g.edge_properties["edge_pen_weight"]
+	edge_weight = g.edge_properties["edge_weight"]
+	edge_color = g.edge_properties["edge_color"]
+
+	pos = arf_layout(g, max_iter=0)
+
+	graph_draw(g, vertex_fill_color=color, vertex_color=color, #vertex_text=label, 
+			vertex_text_position = 0, vertex_size=node_pen_weight,
+			edge_color=edge_color, edge_pen_width=edge_pen_weight,
+			pos=pos,
+			output_size=(700, 700), output="two-nodes.png")
+
+
+def pretty_graphing(g, edge_w=None, edge_w_pad=0, node_w=None, node_w_pad=0, edge_c="gray"):
+	edge_color = g.edge_properties["edge_color"]
+	edge_pen_weight = g.edge_properties["edge_pen_weight"]
+	node_pen_weight = g.vertex_properties["node_pen_weight"]
+
+
+	for e in g.edges():
+		edge_color[e] = edge_c
+
+		if edge_w is not None:
+			edge_pen_weight[e] = (5*(edge_w[e]-edge_w_pad)) + 1 #SCALING BY 2!! -- DRAWING OUT DIFFS
+		else:
+			edge_pen_weight[e] = 1
+
+	for v in g.vertices():
+		if node_w is not None:
+			node_pen_weight[v] = (15*(node_w[v]-node_w_pad)) + 10 
+		else:
+			node_pen_weight[v] = 10
+		print node_pen_weight[v]
+
+	draw_graph(g)
+
+
+
 def add_edge(g, node_i, node_j, val):
 	if val == 1:
 		e = g.edge(node_i, node_j, add_missing=True)
@@ -18,78 +84,116 @@ def add_edge(g, node_i, node_j, val):
 
 
 
-def user_to_node(i, users, g, color, c, label=None, l=None):
-	if i not in users:
-		node = g.add_vertex()
-		color[node] = c
-		if label is not None and l is not None:
-			label[node] = l
-		users[i] = node
-	else:
+def user_to_node(i, cat, users, g, col, l="", t=""):
+	uid = g.vertex_properties["uid"]
+	color = g.vertex_properties["color"]
+	label = g.vertex_properties["label"]
+	category = g.vertex_properties["category"]
+	time = g.vertex_properties["time"]
+
+	if i in users:
 		node = users[i]
+	
+	# make new node
+	else:
+		node = g.add_vertex()
+
+		uid[node] = i
+		color[node] = col
+		label[node] = l
+		category[node] = cat
+		time[node] = t
+		
+		users[i] = node
 
 	return node
 
 
+def initialize_props(g):
+	# INITIAL
+	color = new_vprop("color", "vector<float>", g)
+	label = new_vprop("label", "string", g)
+	uid = new_vprop("uid", "string", g)
+	category = new_vprop("category", "string", g)
+	time = new_vprop("time", "string", g)	
 
-def make_graph(status, rel, gen=None):
+	# ACTIVITY
+	# what % of the statuses are interactive ones 
+	node_social_score = new_vprop("node_social_score", "float", g)
+	# how many different people the user interacts with
+	node_diversity_score = new_vprop("node_diversity_score", "float", g)
+	# average neighbor score
+	node_neighbors_score = new_vprop("node_neighbors_score", "float", g)
+	# total node weight
+	node_weight = new_vprop("node_weight", "float", g)
+	node_pen_weight = new_vprop("node_pen_weight", "float", g)
+	# EDGE PROPERTIES
+	edge_weight = new_eprop("edge_weight", "float", g)
+	edge_pen_weight = new_eprop("edge_pen_weight", "float", g)
+	edge_color = new_eprop("edge_color", "string", g)
+
+
+	# CLUSTEREDNESS
+	clusteredness = new_vprop("clusteredness", "float", g)
+
+	# CONNECTIVITY
+	connectivity = new_vprop("connectivity", "float", g)
+
+
+
+def make_graph(status, rel, t):
 	g = Graph()
+	initialize_props(g)
 
 	rts = status["RTS"]
 	likes = status["LIKES"]
 	author = str(status["AUTHOR"])
 
-	# g.vertex_properties["color"] = g.new_vertex_property("string")
-	color = g.new_vertex_property("string")
-	label = g.new_vertex_property("string")
-	uid = g.new_vertex_property("string")
+	# graph properties
+	color = g.vertex_properties["color"]
+	label = g.vertex_properties["label"]
+	uid = g.vertex_properties["uid"]
+	category = g.vertex_properties["category"]
+	time = g.vertex_properties["time"]
 
-	g.vertex_properties["color"] = color
-	g.vertex_properties["label"] = label
-	g.vertex_properties["uid"] = uid
 
 	# adding root
 	users = {}
-	root = user_to_node(author, users, g, color, "black", label, author)
+	root = user_to_node(author, "source", users, g, BLACK, t=status["TIME"])
+
 
 	# one vertex for every user who retweets
-	# points = following
-	for i in rts.keys():
-		node = user_to_node(i, users, g, color, "red", label, i)
+	for i in rts:
+		node = user_to_node(i, "primary", users, g, RED, t=rts[i]["RT_AT"])
 		
 		for exposed in rts[i]["FOLLOWERS"]["ids"].keys():
-			c = "white"
+			c = PINK
 			if str(i) in likes:
-				c = "pink"
-			node = user_to_node(exposed, users, g, color, c)
-			uid[node] = i
+				c = WHITE
+			node = user_to_node(exposed, "secondary", users, g, c)
 
 
 	# adding relationship edges
-	for i in rel.keys():
-		for j in rel[i].keys():
+	if t == "specific":
+		for i in rel.keys():
+			for j in rel[i].keys():
 
-			node_i = user_to_node(i, users, g, color, "white")
-			node_j = user_to_node(j, users, g, color, "white")
-			uid[node_i] = i
-			uid[node_j] = j
- 
-			try:
-				val = rel[i][j]
-			except:
-				continue
+				node_i = user_to_node(i, "tertiary", users, g, GRAY)
+				node_j = user_to_node(j, "tertiary", users, g, GRAY)
 
-			add_edge(g, node_i, node_j, val)
+				try:
+					val = rel[i][j]
+				except:
+					continue
 
-			
-	if gen is not None:
-		for i in gen.keys():
-			for j in gen[i].keys():
+				add_edge(g, node_i, node_j, val)
 
-				node_i = user_to_node(i, users, g, color, "gray")
-				node_j = user_to_node(j, users, g, color, "gray")
-				uid[node_i] = i
-				uid[node_j] = j
+	if t == "general":
+		for i in rel.keys():
+			for j in rel[i].keys():
+
+				node_i = user_to_node(i, "tertiary", users, g, GRAY)
+				node_j = user_to_node(j, "tertiary", users, g, GRAY)
 	 
 				try:
 					val = gen[i][j]
@@ -113,31 +217,143 @@ def make_graph(status, rel, gen=None):
 	return g
 
 
-def fill_edges(g):
+
+def get_activity(g):
+	# VERTEX PROPERTIES
 	uid = g.vertex_properties["uid"]
+	category = g.vertex_properties["category"]
+
+	node_social_score = g.vertex_properties["node_social_score"]
+	node_diversity_score = g.vertex_properties["node_diversity_score"]
+	node_neighbors_score = g.vertex_properties["node_neighbors_score"]
+	node_weight = g.vertex_properties["node_weight"]
+
+	# EDGE PROPERTIES
+	edge_weight = g.edge_properties["node_diversity_score"]
+
+	users = {}
 
 	for v in g.vertices():
 		s = uid[v]
-		targets = [int(uid[t]) for t in v.out_neighbors()]
 
-		weights = metrics.edge_weight(s, targets)
+		# ONLY CALCULATE THIS FOR RELEVANT NODES.
+		if category[v] == "primary" or category[v] == "secondary":
 
-		print "weight from", s, "to", t, "=", weights
+			targets = []
+			for t in v.out_neighbors():
+				t_int = int(uid[t])
+				targets.append(t_int)
+				users[t_int] = t # int
 
-		#print vprop[vertex].title
+			node_social, node_diversity, weights = metrics.edge_weight(s, targets)
 
-	# g.edge(node_j, node_i, add_missing=True)
+			for t_id_int in weights:
+				t = users[t_id_int]
+				edge = g.edge(v, t) 
+				edge_weight[edge] = weights[t_id_int] 
+
+			node_social_score[v] = node_social 
+			node_diversity_score[v] = node_diversity
+			node_neighbors_score[v] = metrics.average_neighbor_weight(v, g)
+
+			print "soc", node_social, "div", node_diversity, "neigh", node_neighbors_score[v]
+
+		else:
+			node_social_score[v] = 0
+			node_diversity_score[v] = 0
+			node_neighbors_score[v] = 0
+
+
+	# normalizing 
+	edge_weight = metrics.normalize_weights(edge_weight, g.edges(), 1)
+	
+	node_social_score = metrics.normalize_weights(node_social_score, g.vertices())	
+	node_diversity_score = metrics.normalize_weights(node_diversity_score, g.vertices())
+	node_neighbors_score = metrics.normalize_weights(node_neighbors_score, g.vertices())
+
+	for v in g.vertices():
+		soc = node_social_score[v]
+		div = node_diversity_score[v]
+		neigh = node_neighbors_score[v]
+
+		node_weight[v] = soc + div + neigh		
+
+
+	# pretty graphing
+	pretty_graphing(g, edge_weight, 1, node_weight, edge_c="gray")
+
+	return g 
+
+
+def get_clusteredness(g):
+	category = g.vertex_properties["category"]
+	clusteredness = g.vertex_properties["clusteredness"]
+
+	print g.vertex_properties.keys()
+	print g.edge_properties.keys()
+
+
+	for v in g.vertices():
+
+		possible = 0
+		actual = 0
+
+		if category[v] == "primary" or category[v] == "secondary":
+			# ignore their relation to v
+			# discriminate between one-way and two-way edges.
+
+			neighbors = []
+			for n_out in v.out_neighbors():
+				neighbors.append(n_out)
+			for n_in in v.in_neighbors():
+				neighbors.append(n_in)
+
+			for source in neighbors:
+				for dest in neighbors:
+
+					if source != dest:
+						possible += 1
+						if g.edge(source, dest) is not None:
+							actual += 1
+
+		print "possible", possible, "actual", actual
+		if possible == 0:
+			cluster = 0
+		else:
+			cluster = actual / float(possible)
+
+		clusteredness[v] = cluster
+		print "cluster score =", cluster
+
+
+	clusteredness = metrics.normalize_weights(clusteredness, g.vertices())
+
+	pretty_graphing(g, edge_w=None, node_w=clusteredness)
+
+	return g
+
+
+
+# make sure that it's not skewed toward rters, who are guaranteed to have 5
+# basically, are your followers also connected to others in the network. ***
+# for secondaries with no followers: drop out of calculation.
+def get_centrality(g):
+	connectivity = new_vprop("connectivity", "float", g)
+
+
 
 
 
 
 def fill_graph(g):
-	fill_edges(g)
 
-# 	for v in g.vertices():
-#     print(v)
-# for e in g.edges():
-#     print(e)
+	get_activity(g)
+	get_connectivity(g)
+
+
+
+
+
 
 
 
