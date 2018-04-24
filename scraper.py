@@ -170,7 +170,7 @@ def getfriendsfollowers(status_id):
 					sec_i += 1
 
 				except twitter.error.TwitterError as e:
-					if continue_user(e):
+					if utils.continue_user(e):
 						sec_i += 1
 					else:
 						api_count += 1
@@ -195,7 +195,7 @@ def getfriendsfollowers(status_id):
 			print "WROTE", str(uid)+".txt.gz"
 
 		except twitter.error.TwitterError as e:
-			if continue_user(e):
+			if utils.continue_user(e):
 				rter_i += 1
 			else:
 				api_count += 1
@@ -300,7 +300,7 @@ def relations_check(users, api_count):
 
 
 # def old_relations_check(root, subtree):
-	pass
+	# pass
 	# 	api_count = 0
 	# 	api = getAPI(api_count)
 	# 	api.InitializeRateLimit()
@@ -441,6 +441,8 @@ plan of action:
 
 
 sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/
+
+sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/rters979940346649042946.tar.gz ~/iw/
 
 """
 # ['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']
