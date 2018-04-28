@@ -5,7 +5,7 @@ from graph import RED, BLACK, GRAY, PINK
 def analyze_activity(g):
 	# node 
 	color = g.vertex_properties["color"]
-	node_weight = g.vertex_properties["node_weight"]
+	node_weight = g.vertex_properties["centrality"]
 	# category = g.vertex_properties["category"]
 
 	primary = []
@@ -14,11 +14,13 @@ def analyze_activity(g):
 	for v in g.vertices():
 		weight = node_weight[v]
 
+		print weight
+
 		#CHANGE LATER !!!
 		if color[v] == RED:
 			primary.append(weight)
 
-		elif category[v] == PINK:
+		elif color[v] == PINK:
 			secondary.append(weight)
 
 	pr_avg, pr_std = np.mean(np.array(primary)), np.std(np.array(primary))

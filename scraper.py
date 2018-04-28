@@ -9,6 +9,96 @@ import urllib2
 import re
 import utils
 
+# get rid of repeat statuses
+def get_source(filename):
+	api_count = 0
+	api = getAPI(api_count)
+
+	bins = {}
+
+	with open(filename, "r") as f:
+		l = json.loads(f.read())
+	
+	i = 0
+	keys = l.keys()
+	while i < len(keys):
+		status_id = int(keys[i])
+		print i
+		try:
+			s = api.GetStatus(status_id)
+
+			# getting to the source status
+			source = s.retweeted_status
+			if source is None:
+				source = s
+
+			if source.id not in bins:
+				url = l[str(status_id)]
+				bins[source.id] = url
+
+			i += 1
+
+		except twitter.error.TwitterError as e:
+			if utils.continue_user(e):
+				continue
+			else:
+				api_count += 1
+				new_api = utils.rate_limit(api, api_count, app_only=False)
+				api = new_api	
+	return bins
+
+
+def get_relevant_statuses():
+	api_count = 0
+	api = getAPI(api_count)
+
+	with open("election-filter1.txt") as f:
+
+		real_dict = {}
+		real_count = 0
+		fake_count = 0
+
+		real = {}
+		fake = {}
+
+		for line in f:
+			status_id = int(line)
+			
+			try:
+				s = api.GetStatus(status_id)
+
+				if fake_count >= 100 and real_count >= 100:
+					break
+
+				if len(s.urls) == 0:
+					continue
+				
+				url = s.urls[0].expanded_url
+
+				if utils.is_fake(url) and fake_count < 100:
+					fake[status_id] = url
+					fake_count += 1
+
+				elif utils.is_real(url, real_dict) and real_count < 100:
+					real[status_id] = url
+					real_count += 1
+
+
+			except twitter.error.TwitterError as e:
+				if utils.continue_user(e):
+					continue
+				else:
+					api_count += 1
+					new_api = utils.rate_limit(api, api_count, app_only=False)
+					api = new_api	
+
+	print "DONE"
+	# with open("fakeids.txt", "w") as f:
+	# 	f.write(json.dumps(fake))
+	# with open("realids.txt", "w") as f:
+	# 	f.write(json.dumps(real))
+	return real, fake
+
 
 # scrape for likes of a status
 #https://stackoverflow.com/questions/28982850/twitter-api-getting-list-of-users-who-favorited-a-status
@@ -61,18 +151,6 @@ def ffuser(uid, api, use_bom=False):
 	return (num_friends, friends, num_followers, followers)
 
 
-	# all_news_sites = []
-	# fake_news_sites = [] 
-
-	# with open('fake_news_sites.csv', 'rb') as f:
-	#     reader = csv.reader(f)
-	#     data = list(reader)
-	#     for line in data:
-	#     	name = line[0].split(".")[0].lower()
-	#     	fake_news_sites.append({"name":name, "type":line[1], "reg":line[2]})
-
-	#for item in fake_news_sites:
-		#print item
 
 
 # get friends & follower network of a particular status
@@ -88,12 +166,8 @@ def getfriendsfollowers(status_id):
 	ignore = [int(x.split(".")[0]) for x in os.listdir(save_path)]
 
 	s = api.GetStatus(int(status_id))
-	source = s.retweeted_status #fix fix fix -- if it's your own post?
 
-	if source is None:
-		source = s
-
-	#Get info
+	# getting info
 	author = source.user.id 
 	created_at = source.created_at
 	urls = [url.expanded_url for url in source.urls]
@@ -144,8 +218,8 @@ def getfriendsfollowers(status_id):
 			sec_i = 0
 			while sec_i < len(followers):  # secondary = followers of retweeters
 				
-				if sec_i == 5:
-					break
+				# if sec_i == 5:
+				# 	break
 
 				sec_id = followers[sec_i]
 
@@ -384,7 +458,6 @@ def general_relationships(status):
 
 			relations.update(tert_relations)
 
-	print "DONE"
 	f = gzip.open("general_relationship_data.txt.gz", "w")
 	f.write(json.dumps(relations))
 	return relations
@@ -442,7 +515,9 @@ plan of action:
 
 sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/
 
-sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/rters979940346649042946.tar.gz ~/iw/
+sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/rters988580059928825857.tar.gz ~/iw/
+
+tar -zcvf archive.tar.gz directory/ 
 
 """
 # ['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']

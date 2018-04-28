@@ -3,6 +3,7 @@ from scraper import get_user_ids_of_post_likes
 import datetime
 from dateutil.parser import parse
 import utils
+import time
 
 
 
@@ -45,9 +46,19 @@ def user_statuses(user1, targets): #target is list of INTS
 	try:
 		t1 = api.GetUserTimeline(user1, count=200)
 		print "finding weights from", api.GetUser(user_id=user1).screen_name, "uid =", user1
-	
-	except:
-		return social, social_set, data, 0
+		
+	except twitter.error.TwitterError as e:
+		if utils.continue_user(e):
+			return social, social_set, data, 0
+		else:
+			api_count += 1
+			new_api = utils.rate_limit(api, api_count, app_only=False)
+			api = new_api
+	except requests.exceptions.ConnectionError:
+		time.sleep(60)
+		api_count += 1
+		new_api = utils.rate_limit(api, api_count)
+		api = new_api
 	
 
 	i = 0

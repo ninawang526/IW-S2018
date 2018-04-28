@@ -96,6 +96,7 @@ def user_to_node(i, cat, users, g, col, l="", t=""):
 	
 	# make new node
 	else:
+
 		node = g.add_vertex()
 
 		uid[node] = i
@@ -137,7 +138,7 @@ def initialize_props(g):
 	clusteredness = new_vprop("clusteredness", "float", g)
 
 	# CONNECTIVITY
-	connectivity = new_vprop("connectivity", "float", g)
+	centrality = new_vprop("centrality", "float", g)
 
 
 
@@ -196,12 +197,14 @@ def make_graph(status, rel, t):
 				node_j = user_to_node(j, "tertiary", users, g, GRAY)
 	 
 				try:
-					val = gen[i][j]
+					val = rel[i][j]
 				except:
 					continue
 
 				add_edge(g, node_i, node_j, val)
 
+
+	g.save("specific_edge_weights-ACTIVITY.xml.gz")
 
 	# pos = sfdp_layout(g)
 	pos = arf_layout(g, max_iter=0)
@@ -218,6 +221,18 @@ def make_graph(status, rel, t):
 
 
 
+def in_and_out(v):
+	neighbors = []
+
+	for n_out in v.out_neighbors():
+		neighbors.append(n_out)
+	
+	for n_in in v.in_neighbors():
+		neighbors.append(n_in)
+
+	return neighbors
+
+
 def get_activity(g):
 	# VERTEX PROPERTIES
 	uid = g.vertex_properties["uid"]
@@ -229,7 +244,7 @@ def get_activity(g):
 	node_weight = g.vertex_properties["node_weight"]
 
 	# EDGE PROPERTIES
-	edge_weight = g.edge_properties["node_diversity_score"]
+	edge_weight = g.edge_properties["edge_weight"]
 
 	users = {}
 
@@ -302,11 +317,7 @@ def get_clusteredness(g):
 			# ignore their relation to v
 			# discriminate between one-way and two-way edges.
 
-			neighbors = []
-			for n_out in v.out_neighbors():
-				neighbors.append(n_out)
-			for n_in in v.in_neighbors():
-				neighbors.append(n_in)
+			neighbors = in_and_out(v)
 
 			for source in neighbors:
 				for dest in neighbors:
@@ -338,7 +349,44 @@ def get_clusteredness(g):
 # basically, are your followers also connected to others in the network. ***
 # for secondaries with no followers: drop out of calculation.
 def get_centrality(g):
-	connectivity = new_vprop("connectivity", "float", g)
+	centrality = g.vertex_properties["centrality"]
+	category = g.vertex_properties["category"]
+
+	for v in g.vertices():
+		
+		total = 0
+		bridge = 0
+
+		if category[v] == "primary" or category[v] == "secondary":
+			# ignore their relation to v
+			# discriminate between one-way and two-way edges.
+
+			neighbors = in_and_out(v)
+
+			for s in neighbors:
+				for t in neighbors:
+					if s != t:
+						paths = all_shortest_paths(g, s, t)
+
+						for path in paths:
+							total +=1 
+							if v in path:
+								bridge += 1
+
+		if total == 0:
+			centrality_score = 0
+		else:
+			centrality_score = float(bridge) / total
+
+		centrality[v] = centrality_score
+
+
+	centrality = metrics.normalize_weights(centrality, g.vertices())
+
+	pretty_graphing(g, edge_w=None, node_w=centrality)
+
+	return g
+
 
 
 

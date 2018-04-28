@@ -1,20 +1,31 @@
 import scraper
-import json, os, twitter, gzip
-import graph
+import json, os, twitter, gzip, csv
+# import graph
 import metrics
-from graph_tool.all import *
+# from graph_tool.all import *
 from apps import getAPI
 import analysis
+import utils
 
-# api = getAPI(0)
-# statuses = api.GetUserTimeline(screen_name="Trey_VonDinkis",count=10)
-# for s in statuses:
-# 	print s.id_str, s.text
 
-# statusids = ["979940346649042946"]
-statusids = ["988580059928825857"]
+# STEP 1: HYDRATE TWEETS, IDENTIFY RELEVANT ONES
+# realids, fakeids = scraper.get_relevant_statuses()
 
-for sid in statusids:
+
+with open("fakeids-clean.txt", "r") as f:
+	statuses = json.loads(f.read())
+	statusids = statuses.keys()
+
+# 
+# statusids = ["979940346649042946"] # fake news
+# statusids = ["988580059928825857"] # NYT
+
+i = 0
+while i < len(statusids):
+
+	sid = statusids[i]
+
+	print "~~~~~ WORKING ON STATUS", i, "~~~~~"
 
 	# get the data
 	retweet_data = scraper.getfriendsfollowers(sid)
@@ -22,17 +33,20 @@ for sid in statusids:
 	# rtdata = gzip.open("retweetdata.txt.gz", "r").read()
 	# status_data = json.loads(rtdata)
 	
-	# relations = scraper.specific_relationships(status_data)
+	# # relations = scraper.specific_relationships(status_data)
 	# s_relations = json.loads(gzip.open("specific_relationship_data.txt.gz","r").read())
 	# specific_graph = graph.make_graph(status_data, s_relations, "specific")
-	# specific_graph.save("specific.xml.gz")
+	# # specific_graph.save("specific.xml.gz")
 
 	# specific_graph = load_graph("specific.xml.gz")
-	# filled_specific = graph.get_clusteredness(specific_graph)
-	# filled_specific.save("specific_edge_weights.xml.gz")
+	# filled_specific = graph.get_activity(specific_graph)
+	# filled_specific.save("specific_edge_weights-ACTIVITY.xml.gz")
 
 	# g = load_graph("specific_edge_weights.xml.gz")
-	# draw_graph(g)
+	# graph.draw_graph(g)
+
+
+	# analysis.analyze_activity(g)
 	
 	# g_relations = scraper.general_relationships(status_data)
 	# g_relations = json.loads(gzip.open("general_relationship_data.txt.gz","r").read())
