@@ -61,6 +61,8 @@ while i < len(statusids):
 
 	# g2 = load_graph("my_graph.xml.gz")
 
+	i += 1
+
 
 
 # network_data = scraper.interrelationships(rtjson)

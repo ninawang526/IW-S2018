@@ -156,7 +156,7 @@ def ffuser(uid, api, use_bom=False):
 # get friends & follower network of a particular status
 def getfriendsfollowers(status_id):
 	api_count = 0
-	api = getAPI(api_count)
+	api = getAPI(api_count, sleep_on_rate_limit=True)
 	api.InitializeRateLimit()
 
 	save_path = "./rters/" + str(status_id) #CHANGE THIS! IDS CHANGE..???
@@ -165,7 +165,7 @@ def getfriendsfollowers(status_id):
 	
 	ignore = [int(x.split(".")[0]) for x in os.listdir(save_path)]
 
-	s = api.GetStatus(int(status_id))
+	source = api.GetStatus(int(status_id))
 
 	# getting info
 	author = source.user.id 
@@ -513,7 +513,7 @@ plan of action:
 #then go through users who rt.
 
 
-sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/
+sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-188-68-9.us-east-2.compute.amazonaws.com:~/IW-S2018/
 
 sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/rters988580059928825857.tar.gz ~/iw/
 
