@@ -157,7 +157,6 @@ def ffuser(uid, api, use_bom=False):
 def getfriendsfollowers(status_id):
 	api_count = 0
 	api = getAPI(api_count, sleep_on_rate_limit=True)
-	api.InitializeRateLimit()
 
 	save_path = "./rters/" + str(status_id) #CHANGE THIS! IDS CHANGE..???
 	if not os.path.exists(save_path):
@@ -190,6 +189,9 @@ def getfriendsfollowers(status_id):
 	status_entry = {"TIME":created_at,"AUTHOR": author, 
 					"URL":urls, "RTS":{}, "LIKES":likes} # if this is a rt'd url
 
+
+	api_count = 1
+	api = getAPI(api_count)
 
 	# just look at who each one follows (friends)
 	rter_i = 0
