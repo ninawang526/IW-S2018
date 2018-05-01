@@ -37,25 +37,26 @@ def draw_graph(g):
 	# edge properties
 	edge_pen_weight = g.edge_properties["edge_pen_weight"]
 	edge_weight = g.edge_properties["edge_weight"]
-	edge_color = g.edge_properties["edge_color"]
 
 	pos = arf_layout(g, max_iter=0)
 
 	graph_draw(g, vertex_fill_color=color, vertex_color=color, #vertex_text=label, 
 			vertex_text_position = 0, vertex_size=node_pen_weight,
-			edge_color=edge_color, edge_pen_width=edge_pen_weight,
+			edge_color="gray", edge_pen_width=edge_pen_weight,
 			pos=pos,
 			output_size=(700, 700), output="two-nodes.png")
 
 
+
+
 def pretty_graphing(g, edge_w=None, edge_w_pad=0, node_w=None, node_w_pad=0, edge_c="gray"):
-	edge_color = g.edge_properties["edge_color"]
+	# edge_color = g.edge_properties["edge_color"]
 	edge_pen_weight = g.edge_properties["edge_pen_weight"]
 	node_pen_weight = g.vertex_properties["node_pen_weight"]
 
 
 	for e in g.edges():
-		edge_color[e] = edge_c
+		# edge_color[e] = edge_c
 
 		if edge_w is not None:
 			edge_pen_weight[e] = (5*(edge_w[e]-edge_w_pad)) + 1 #SCALING BY 2!! -- DRAWING OUT DIFFS
@@ -131,7 +132,7 @@ def initialize_props(g):
 	# EDGE PROPERTIES
 	edge_weight = new_eprop("edge_weight", "float", g)
 	edge_pen_weight = new_eprop("edge_pen_weight", "float", g)
-	edge_color = new_eprop("edge_color", "string", g)
+	# edge_color = new_eprop("edge_color", "string", g)
 
 
 	# CLUSTEREDNESS
@@ -156,6 +157,8 @@ def make_graph(status, rel, t):
 	uid = g.vertex_properties["uid"]
 	category = g.vertex_properties["category"]
 	time = g.vertex_properties["time"]
+
+	# edge_color = g.edge_properties["edge_color"]
 
 
 	# adding root
@@ -203,9 +206,6 @@ def make_graph(status, rel, t):
 
 				add_edge(g, node_i, node_j, val)
 
-
-	g.save("specific_edge_weights-ACTIVITY.xml.gz")
-
 	# pos = sfdp_layout(g)
 	pos = arf_layout(g, max_iter=0)
 	# pos = fruchterman_reingold_layout(g, n_iter=1000)
@@ -218,6 +218,7 @@ def make_graph(status, rel, t):
 				output_size=(700, 700), output="two-nodes.png")
 
 	return g
+
 
 
 
@@ -293,6 +294,8 @@ def get_activity(g):
 
 		node_weight[v] = soc + div + neigh		
 
+	
+	g.save("specific_edge_weights-ACTIVITY.xml.gz")
 
 	# pretty graphing
 	pretty_graphing(g, edge_weight, 1, node_weight, edge_c="gray")

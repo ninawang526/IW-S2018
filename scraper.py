@@ -40,7 +40,7 @@ def get_source(filename):
 
 		except twitter.error.TwitterError as e:
 			if utils.continue_user(e):
-				continue
+				i += 1
 			else:
 				api_count += 1
 				new_api = utils.rate_limit(api, api_count, app_only=False)
@@ -112,8 +112,7 @@ def get_user_ids_of_post_likes(post_id):
         	ints.append(int(u))
         return ints
     except urllib2.HTTPError:
-        return False
-
+        return []
 
 
 # botometer intialization
@@ -149,8 +148,6 @@ def ffuser(uid, api, use_bom=False):
 	followers = api.GetFollowerIDs(user_id=uid,count=50,total_count=50)
 	friends = api.GetFriendIDs(user_id=uid,count=50,total_count=50)
 	return (num_friends, friends, num_followers, followers)
-
-
 
 
 # get friends & follower network of a particular status
@@ -309,7 +306,6 @@ def specific_relationships(status, api_count):
 		network = user["FOLLOWERS"]["ids"].keys() + [uid]
 		status_network.update(set(network))
 
-
 	# next,find interrelations of people associated with it
 	
 	users = list(status_network)
@@ -333,6 +329,7 @@ def relations_check(users, api_count):
 
 	ui = 0 
 	while ui < len(users):
+		print "sec =", ui, "/", len(users)
 
 		uj = ui + 1
 		while uj < len(users):

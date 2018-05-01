@@ -41,7 +41,6 @@ def user_statuses(user1, targets): #target is list of INTS
 	social = {"replies": 0, "rts": 0, "mentions": 0}
 	social_set = set()
 
-
 	# get timeline of user 1 -- returns 200 of user's most recent tweets
 	try:
 		t1 = api.GetUserTimeline(user1, count=200)
@@ -61,11 +60,9 @@ def user_statuses(user1, targets): #target is list of INTS
 		api = new_api
 	
 
+	# go through the timeline, looking for interactions
 	i = 0
 	while i < len(t1):
-
-		# if i == 10:
-		# 	break
 
 		s1 = t1[i]
 
@@ -124,7 +121,7 @@ def edge_weight(user1, targets):
 	node_data, social_set, edge_data, num = user_statuses(user1, targets)
 
 
-	# NODE WEIGHTS - social
+	# NODE WEIGHTS - social: what percentage of your posts are interactive
 	rep = node_data["replies"]
 	rts = node_data["rts"]
 	ments = node_data["mentions"]
@@ -135,14 +132,14 @@ def edge_weight(user1, targets):
 	else:
 		social = node_sum / float(num)
 
-	# NODE WEIGHTS - diversity
+	# NODE WEIGHTS - diversity: percentage of interactive posts being w diff ppl
 	if len(social_set) == 0:
 		diversity = 0
 	else:
-		diversity = len(social_set) / float(rep+rts+ments) # diversity = percentage of interactive posts being w diff ppl
+		diversity = len(social_set) / float(rep+rts+ments)
 
 
-	# EDGE WEIGHTS
+	# EDGE WEIGHTS - percentage of your interactions that are with that person
 	edge_weights = {}
 	for user in edge_data.keys():
 		d = edge_data[user]
