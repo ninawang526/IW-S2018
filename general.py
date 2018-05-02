@@ -1,10 +1,10 @@
 import scraper
 import json, os, twitter, gzip, csv, glob
-import graph
+# import graph
 import metrics
-from graph_tool.all import *
+# from graph_tool.all import *
 from apps import getAPI
-import analysis
+# import analysis
 import utils
 
 NUM = 25
@@ -25,8 +25,8 @@ api_count = 5
 i = 0
 while i < len(statusids) and i < NUM:
 
-	if i == 1:
-		break
+	# if i == 1:
+	# 	break
 
 	sidfolder = statusids[i]
 	rterfiles = glob.glob(sidfolder+"/*")
@@ -46,8 +46,8 @@ while i < len(statusids) and i < NUM:
 	secs = []
 	while j < len(rterfiles) and j < NUM:
 	
-		if j == 5:
-			break
+		# if j == 5:
+		# 	break
 		
 		rterfolder = rterfiles[j]
 		rter_id = rterfolder.split("/")[3].split(".")[0]
@@ -81,9 +81,9 @@ while i < len(statusids) and i < NUM:
 			secs = rel["secs"]
 
 	# make graph
-	g = graph.make_graph(status_data, status_relations, TYPE.lower(), secs=secs)
-	g.save("general_relationships.xml.gz")
-	graph.pretty_graphing(g)
+	# g = graph.make_graph(status_data, status_relations, TYPE.lower(), secs=secs)
+	# g.save("general_relationships.xml.gz")
+	# graph.pretty_graphing(g)
 
 	# graph operations
 	
