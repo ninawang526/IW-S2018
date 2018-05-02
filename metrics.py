@@ -5,6 +5,7 @@ from dateutil.parser import parse
 import utils
 import time
 import twitter, requests
+import graph
 
 
 
@@ -100,18 +101,45 @@ def user_statuses(user1, targets): #target is list of INTS
 
 
 
-def normalize_weights(metric, iterate, padding=0):
-	minimum = min(metric)
-	maximum = max(metric)
+def normalize_weights(metric, iterate, g, padding=0):
+	minimum = None
+	maximum = None
+
+	if iterate == "vertices":
+		iterator = g.vertices()
+	else:
+		iterator = g.edges()
+
+	for i in iterator:
+		if graph.is_relevant_node(i, g):
+			if minimum is None:
+				minimum = metric[i] 
+			else:
+				if metric[i] < minimum:
+					minimum = metric[i] 
+
+			if maximum is None:
+				maximum = metric[i] 
+			else:
+				if metric[i] > maximum:
+					maximum = metric[i] 
+
+
 	r = float(maximum - minimum)
 	print minimum, maximum, r
 
-	for i in iterate:
-		score = metric[i]
-		if r == 0:
-			metric[i] = padding
-		else:
-			metric[i] = padding + ((score-minimum) / r) 	# on range [padding, padding+1]
+	if iterate == "vertices":
+		iterator = g.vertices()
+	else:
+		iterator = g.edges()
+
+	for j in iterator:
+		if graph.is_relevant_node(j, g):
+			score = metric[j]
+			if r == 0:
+				metric[j] = padding
+			else:
+				metric[j] = padding + ((score-minimum) / r) 	# on range [padding, padding+1]
 
 	return metric
 
@@ -211,7 +239,7 @@ def average_neighbor_weight(user, g):
 		w = 0
 	else:
 		w = weight / float(num)
-		
+
 	return w
 
 	#******* because rters have more connections based on how i constructed the graph, 

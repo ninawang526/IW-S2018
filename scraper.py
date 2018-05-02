@@ -291,30 +291,30 @@ def getfriendsfollowers(status_id):
 # for one status, find network-specific relations
 def specific_relationships(status, api_count):
 	api = getAPI(api_count)
-	api.InitializeRateLimit()
-
-	print status.keys()
 
 	# first, get set of all associated with that status
 	status_network = set([status["AUTHOR"]])
 	rters = status["RTS"]
-	
-	print rters.keys()
+
+	start = time.time()
+
+	secs = []
 
 	for uid in rters.keys():
 		user = rters[uid] 
-		network = user["FOLLOWERS"]["ids"].keys() + [uid]
+		s = user["FOLLOWERS"]["ids"].keys()[:5]
+		secs += s
+		network = s + [uid]
 		status_network.update(set(network))
 
 	# next,find interrelations of people associated with it
-	
 	users = list(status_network)
-	relations = relations_check(users)
+	relations, api_count = relations_check(users, api_count)
 
-	f = gzip.open("specific_relationship_data.txt.gz","w")
-	f.write(json.dumps(relations))
+	#print "time elapsed:", 1.5 mins
 	
-	return relations
+	data = {"relations":relations, "secs":secs}
+	return data, api_count
 
 
 def relations_check(users, api_count):
@@ -329,7 +329,7 @@ def relations_check(users, api_count):
 
 	ui = 0 
 	while ui < len(users):
-		# print "ui=", ui, "/", len(users)
+		print "ui=", ui, "/", len(users)
 
 		uj = ui + 1
 		while uj < len(users):
@@ -344,7 +344,8 @@ def relations_check(users, api_count):
 				elif rel["source"]["following"]:
 					val = 1
 
-				# print "\tui=",ui,"uj=",uj,"val=", val
+				if (uj % 5 == 0):
+					print "\tui=",ui,"uj=",uj,"val=", val
 
 				# store only if an edge exists
 				if val != 0: 
@@ -372,61 +373,6 @@ def relations_check(users, api_count):
 
 	return relations, api_count
 
-
-
-# def old_relations_check(root, subtree):
-	# pass
-	# 	api_count = 0
-	# 	api = getAPI(api_count)
-	# 	api.InitializeRateLimit()
-
-	# 	relations = {}
-	# 	# 0 = no relationship
-	# 	# 1 = ui following uj
-	# 	# 2 = uj following ui
-	# 	# 3 = mutual
-		
-	# 	i = 0
-	# 	while i < len(subtree):
-	# 		source = root 
-	# 		dest = subtree[i]
-
-	# 		try:
-	# 			rel = api.ShowFriendship(source_user_id=source, target_user_id=dest)["relationship"]
-				
-	# 			val = 0
-	# 			if rel["source"]["following"] and rel["source"]["followed_by"]: 
-	# 				val = 3
-	# 			elif rel["source"]["followed_by"]:
-	# 				val = 2
-	# 			elif rel["source"]["following"]:
-	# 				val = 1
-
-	# 			# store only if an edge exists
-	# 			if val != 0: 
-	# 				if source in relations:
-	# 					relations[source][dest] = val
-	# 				else:
-	# 					relations[source] = {dest:val}
-
-	# 			print source, dest, i, val
-	# 			i += 1
-
-	# 		except twitter.error.TwitterError as e:
-	# 			if continue_user(e):
-	# 				i += 1
-	# 			else:
-	# 				api_count += 1
-	# 				new_api = utils.rate_limit(api, api_count, app_only=False)
-	# 				api = new_api
-
-	# 		except requests.exceptions.ConnectionError:
-	# 			time.sleep(60)
-	# 			api_count += 1
-	# 			new_api = utils.rate_limit(api, api_count)
-	# 			api = new_api
-
-	# 	return relations
 
 
 # for one status, find general relations of each user exposed to status
@@ -521,11 +467,11 @@ plan of action:
 #then go through users who rt.
 
 
-sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-188-68-9.us-east-2.compute.amazonaws.com:~/IW-S2018/
+sudo scp -i ~/iw/iw2.pem ~/iw/fake.tar.gz  ec2-user@ec2-52-14-133-230.us-east-2.compute.amazonaws.com:~/IW-S2018/RTER-FILES
 
 sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-188-68-9.us-east-2.compute.amazonaws.com:~/IW-S2018/rters/fake.tar.gz ~/iw/
 
-tar -zcvf fake.tar.gz FAKE/ 
+tar -zcvf fake.tar.gz ~/iw/RTER-FILES/FAKE
 
 """
 # ['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']

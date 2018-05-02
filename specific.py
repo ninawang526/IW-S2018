@@ -15,9 +15,8 @@ NUM = 25
 # realids, fakeids = scraper.get_relevant_statuses()
 
 NEWS = "FAKE"
-TYPE = "GENERAL"
+TYPE = "SPECIFIC"
 ACTIVE = False
-
 
 
 statusids = glob.glob("RTER-FILES/"+NEWS+"/*")
@@ -38,26 +37,23 @@ while i < len(statusids):
 	sidfolder = statusids[i]
 	rterfiles = glob.glob(sidfolder+"/*")
 
-
 	sid = sidfolder.split("/")[2]
+	
+	# if sid in ignore:
+ #        print "IGNORED", sid
+ #        i+=1
+ #        continue
 
-	if sid in ignore:
-                print "IGNORED", sid
-                i+=1
-                continue
-
-	print "AT STATUS", i, "/", min(NUM,len(statusids)), "STATUS ID =", sid
+	print "AT STATUS", i, "/", len(statusids), "STATUS ID =", sid
 	
 	status_data = scraper.recover_status(sid)
 	if status_data is None:
 		i+=1
 		continue
-	status_relations = {}
 
 
 	j = 0
 	# FOR EACH RETWEETER
-	secs = []
 	while j < len(rterfiles) and j < NUM:
 	
 		if j == 5:
@@ -73,70 +69,64 @@ while i < len(statusids):
 
 		# add to status data
 		status_data["RTS"][rter_id] = rter_data 
-	
-		# scrape for general relations 
-		if ACTIVE:
-			relations_data, api_count = scraper.general_relationships(rter_id, rter_data, api_count)
-			status_relations.update(relations_data["relations"])
-			secs += relations_data["secs"]
 
 		j+=1
-	
 
-	# write for each status
+	# scrape for specific relations 
 	save_path = "RTER-RESULTS/"+NEWS+"/"
 
 	if ACTIVE:
+		rel, api_count = scraper.specific_relationships(status_data, api_count)
 		with gzip.open(os.path.join(save_path, TYPE+"/"+sid+".txt.gz"), 'w') as f:
-			f.write(json.dumps({"relations":status_relations, "secs":secs})) # writing for each rter
+			f.write(json.dumps(rel)) # writing for each rter
 	else:
 		with gzip.open(save_path+TYPE+"/"+sid+".txt.gz", "r") as f:
 			rel = json.loads(f.read())
-			status_relations = rel["relations"]
-			secs = rel["secs"]
-
+	
+	status_relations = rel["relations"]
+	secs = rel["secs"]
 
 	# make graph
-	name = "general_relationships.xml.gz"
-	if ACTIVE:
-		g = graph.make_graph(status_data, status_relations, TYPE.lower(), secs=secs)
+	name = "specific_relationships.xml.gz"
+	if True:
+		g = graph.make_graph(status_data, status_relations, TYPE.lower(), secs)
 		g.save(name)
 	else:
 		g = load_graph(name)
 	
 
-	# graph operations - ACTIVITY
-	name = "general_edge_weights-ACTIVITY.xml.gz"
-	if ACTIVE:
-		filled_active = graph.get_activity(g)
-		filled_active.save("general_edge_weights-ACTIVITY.xml.gz")
-	else:
-		filled_active = load_graph(name)
+	# # graph operations - ACTIVITY
+	# name = "general_edge_weights-ACTIVITY.xml.gz"
+	# if ACTIVE:
+	# 	filled_active = graph.get_activity(g)
+	# 	filled_active.save("general_edge_weights-ACTIVITY.xml.gz")
+	# else:
+	# 	filled_active = load_graph(name)
 
-	# utils.prettytable_activity(filled_active)
+	# # utils.prettytable_activity(filled_active)
 
-	# graph operations - CLUSTEREDNESS
-	name = "general_edge_weights-CLUSTER.xml.gz"
-	if ACTIVE:
-		filled_cluster = graph.get_clusteredness(g)
-		filled_cluster.save("general_edge_weights-CLUSTER.xml.gz")
-	else:
-		filled_cluster = load_graph(name)
+	# # graph operations - CLUSTEREDNESS
+	# name = "general_edge_weights-CLUSTER.xml.gz"
+	# if ACTIVE:
+	# 	filled_cluster = graph.get_clusteredness(g)
+	# 	filled_cluster.save("general_edge_weights-CLUSTER.xml.gz")
+	# else:
+	# 	filled_cluster = load_graph(name)
 
-	# utils.prettytable_clusteredness(filled_cluster)
+	# # utils.prettytable_clusteredness(filled_cluster)
 
 
-	# graph operations - CENTRALITY
-	name = "general_edge_weights-CENTRAL.xml.gz"
-	if ACTIVE:
-		filled_central = graph.get_centrality(g)
-		filled_central.save("general_edge_weights-CENTRAL.xml.gz")
-	else:
-		filled_central= load_graph(name)
+	# # graph operations - CENTRALITY
+	# name = "general_edge_weights-CENTRAL.xml.gz"
+	# if ACTIVE:
+	# 	filled_central = graph.get_centrality(g)
+	# 	filled_central.save("general_edge_weights-CENTRAL.xml.gz")
+	# else:
+	# 	filled_central= load_graph(name)
 
-	# utils.prettytable_centrality(filled_central)
+	# # utils.prettytable_centrality(filled_central)
 
-	analysis.analyze(filled_active)
+	# analysis.analyze(filled_active)
 
 	
 

@@ -2,6 +2,7 @@ from graph_tool.all import *
 import json
 import random
 import metrics
+import utils
 
 # 0 = no relationship
 # 1 = ui following uj
@@ -31,7 +32,11 @@ def new_eprop(name, t, g):
 
 def is_relevant_node(v, g):
 	category = g.vertex_properties["category"]
-	return (category[v] == "source" or category[v] == "primary" or category[v] == "secondary")
+	try:
+		e = category[v]
+		return (category[v] == "source" or category[v] == "primary" or category[v] == "secondary")
+	except:
+		return True
 
 
 def draw_graph(g):
@@ -73,7 +78,6 @@ def pretty_graphing(g, edge_w=None, edge_w_pad=0, node_w=None, node_w_pad=0, edg
 			node_pen_weight[v] = (15*(node_w[v]-node_w_pad)) + 10 
 		else:
 			node_pen_weight[v] = 10
-		print node_pen_weight[v]
 
 	draw_graph(g)
 
@@ -145,7 +149,7 @@ def initialize_props(g):
 	centrality = new_vprop("centrality", "float", g)
 
 
-def make_graph(status, rel, t, secs=None):
+def make_graph(status, rel, t, secs):
 	g = Graph()
 	initialize_props(g)
 
@@ -171,7 +175,7 @@ def make_graph(status, rel, t, secs=None):
 	# one vertex for every user who retweets
 	for i in rts:
 		node = user_to_node(i, "primary", users, g, RED, t=rts[i]["RT_AT"])
-		
+	
 		for exposed in secs:
 			c = PINK
 			if str(i) in likes:
@@ -218,7 +222,7 @@ def make_graph(status, rel, t, secs=None):
 	# 			edge_color="gray", 
 	# 			pos=pos,
 	# 			output_size=(700, 700), output="two-nodes.png")
-	# pretty_graphing(g)
+	pretty_graphing(g)
 
 	return g
 
@@ -291,11 +295,11 @@ def get_activity(g):
 
 
 	# normalizing 
-	edge_weight = metrics.normalize_weights(edge_weight, g.edges(), 1)
+	edge_weight = metrics.normalize_weights(edge_weight, "edges", g, padding=1)
 	
-	node_social_score = metrics.normalize_weights(node_social_score, g.vertices())	
-	node_diversity_score = metrics.normalize_weights(node_diversity_score, g.vertices())
-	node_neighbors_score = metrics.normalize_weights(node_neighbors_score, g.vertices())
+	node_social_score = metrics.normalize_weights(node_social_score, "vertices", g)	
+	node_diversity_score = metrics.normalize_weights(node_diversity_score,"vertices", g)
+	node_neighbors_score = metrics.normalize_weights(node_neighbors_score, "vertices", g)
 
 	for v in g.vertices():
 		soc = node_social_score[v]
@@ -304,8 +308,7 @@ def get_activity(g):
 
 		node_weight[v] = soc + div + neigh	
 
-	node_weight = metrics.normalize_weights(node_weight, g.vertices())
-
+	node_weight = metrics.normalize_weights(node_weight, "vertices", g)
 
 	# pretty graphing
 	pretty_graphing(g, edge_weight, 1, node_weight, edge_c="gray")
@@ -318,9 +321,7 @@ def get_clusteredness(g):
 	category = g.vertex_properties["category"]
 	clusteredness = g.vertex_properties["clusteredness"]
 
-	print g.vertex_properties.keys()
-	print g.edge_properties.keys()
-
+	relevant_clusteredness = {}
 
 	for v in g.vertices():
 
@@ -341,7 +342,6 @@ def get_clusteredness(g):
 						if g.edge(source, dest) is not None:
 							actual += 1
 
-		
 		if possible == 0:
 			cluster = 0
 		else:
@@ -349,10 +349,8 @@ def get_clusteredness(g):
 
 		clusteredness[v] = cluster
 
-		print uid[v], "possible", possible, "actual", actual, "cluster score =", cluster
-
-
-	clusteredness = metrics.normalize_weights(clusteredness, g.vertices())
+		if is_relevant_node(v, g):
+			print uid[v], "possible", possible, "actual", actual, "cluster score =", cluster
 
 	pretty_graphing(g, edge_w=None, node_w=clusteredness)
 
@@ -397,11 +395,9 @@ def get_centrality(g):
 		centrality[v] = centrality_score
 		
 
-		print uid[v]
-		print "bridge:", bridge, "total:", total, "score:", centrality_score
-
-
-	centrality = metrics.normalize_weights(centrality, g.vertices())
+		if is_relevant_node(v, g):
+			print uid[v]
+			print "bridge:", bridge, "total:", total, "score:", centrality_score
 
 	pretty_graphing(g, edge_w=None, node_w=centrality)
 

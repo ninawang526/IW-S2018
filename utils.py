@@ -111,7 +111,6 @@ def prettytable_clusteredness(g):
 
 	clusteredness = g.vertex_properties["clusteredness"]
 	
-
 	for v in g.vertices():
 		if category[v] == "source" or category[v] == "primary":
 			pt.add_row([uid[v], category[v], clusteredness[v]])
