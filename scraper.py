@@ -329,13 +329,13 @@ def relations_check(users, api_count):
 
 	ui = 0 
 	while ui < len(users):
-		print "sec =", ui, "/", len(users)
+		# print "ui=", ui, "/", len(users)
 
 		uj = ui + 1
 		while uj < len(users):
 			try:
 				rel = api.ShowFriendship(source_user_id=users[ui], target_user_id=users[uj])["relationship"]
-				
+
 				val = 0
 				if rel["source"]["following"] and rel["source"]["followed_by"]: 
 					val = 3
@@ -343,6 +343,8 @@ def relations_check(users, api_count):
 					val = 2
 				elif rel["source"]["following"]:
 					val = 1
+
+				# print "\tui=",ui,"uj=",uj,"val=", val
 
 				# store only if an edge exists
 				if val != 0: 
@@ -428,38 +430,45 @@ def relations_check(users, api_count):
 
 
 # for one status, find general relations of each user exposed to status
-def general_relationships(status):
-	api_count = 0
-
+def general_relationships(uid, rter_data, api_count):
 	# for each exposed user, get all those who follow them, see if mutual
 	relations = {}
-	rters = status["RTS"] 
 	
 	# author does NOT count as a secondary. only rters (primary = author)
 	# and followers of rters (primary = rter)
-	for uid in rters:
-		rter = rters[uid]
 
-		print "rter =", uid, "/", len(rters)
+	secondaries = rter_data["FOLLOWERS"]["ids"]
 
-		secondaries = rter["FOLLOWERS"]["ids"]
+	sec_users = [uid] + secondaries.keys()[:5] + rter_data["FRIENDS"]["ids"][:5]
+	sec_relations, api_count = relations_check(sec_users, api_count)
 
-		sec_users = secondaries.keys() + rter["FRIENDS"]["ids"][:5] + [uid]
-		sec_relations, api_count = relations_check(sec_users, api_count)
+	relations.update(sec_relations)
 
-		relations.update(sec_relations)
+	secs = []
+	for sec in secondaries.keys()[:1]:
+		secs.append(sec)
 
-		for sec in secondaries:
-			tertiaries = secondaries[sec]["FRIENDS"]["ids"][:5] + secondaries[sec]["FOLLOWERS"]["ids"][:5]
+		tertiaries = secondaries[sec]["FRIENDS"]["ids"][:5] + secondaries[sec]["FOLLOWERS"]["ids"][:5]
 
-			tert_users = tertiaries + [sec]
-			tert_relations, api_count = relations_check(tert_users, api_count)
+		tert_users = tertiaries + [sec]
+		tert_relations, api_count = relations_check(tert_users, api_count)
 
-			relations.update(tert_relations)
+		relations.update(tert_relations)
+	
+	data = {"relations":relations, "secs":secs}
+	return data, api_count
 
-	f = gzip.open("general_relationship_data.txt.gz", "w")
-	f.write(json.dumps(relations))
-	return relations
+
+
+def recover_status(sid):
+	api = getAPI(0, sleep_on_rate_limit=True)
+	try:
+		s = api.GetStatus(int(sid))
+	except twitter.error.TwitterError as e:
+		return None
+
+	return {"RTS":{}, "LIKES":{}, "AUTHOR":s.user.id , "TIME":s.created_at}
+
 
 
 
@@ -514,9 +523,9 @@ plan of action:
 
 sudo scp -i ~/iw/iw2.pem ~/iw/apps.py  ec2-user@ec2-18-188-68-9.us-east-2.compute.amazonaws.com:~/IW-S2018/
 
-sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-217-157-106.us-east-2.compute.amazonaws.com:~/IW-S2018/rters988580059928825857.tar.gz ~/iw/
+sudo scp -i ~/iw/iw2.pem  ec2-user@ec2-18-188-68-9.us-east-2.compute.amazonaws.com:~/IW-S2018/rters/fake.tar.gz ~/iw/
 
-tar -zcvf archive.tar.gz directory/ 
+tar -zcvf fake.tar.gz FAKE/ 
 
 """
 # ['144265513', '859403739253407744', '853341295', '2971940812', '899115298997055491', '957146205825437696', '97212964', '1623513960', '1935424308', '22296700', '842871807770152964', '834485300143456256']

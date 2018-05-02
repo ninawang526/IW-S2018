@@ -1,6 +1,7 @@
 import twitter
 import time, csv
 from apps import lenapis, getAPI
+from prettytable import PrettyTable
 
 
 real_news = ["nyti.ms", "washingtonpost", "thehill", "huff.to", "cnn",
@@ -54,7 +55,7 @@ def rate_limit(api, apc, app_only=False):
 	print "current time:", time.strftime("%H:%M:%S", time.gmtime()) 
 	print "api", apc % lenapis, "will resume at", time.strftime("%H:%M:%S", time.gmtime(rl[2])), "\n"
 
-	time.sleep(15)
+	# time.sleep(10)
 
 	new_api = getAPI(apc, app_only=app_only) 
 	new_api.InitializeRateLimit()
@@ -74,29 +75,81 @@ def continue_user(e):
 		return True
 
 
-# def error_handle(f, loop_end):
-# 	api_count = 0
-# 	api = apps.getAPI(api_count)
+def prettytable_activity(g):
+	pt = PrettyTable()
+	pt.field_names = ["uid", "type", "social", "diversity", "neighbors", "total"]
 
-# 	i = 0
+	uid = g.vertex_properties["uid"]
+	category = g.vertex_properties["category"]
 
-# 	while i < 
-# 	try:
-# 		f(i)
-# 		i += 1
+	node_social_score = g.vertex_properties["node_social_score"]
+	node_diversity_score = g.vertex_properties["node_diversity_score"]
+	node_neighbors_score = g.vertex_properties["node_neighbors_score"]
+	node_weight = g.vertex_properties["node_weight"]
+	edge_weight = g.edge_properties["edge_weight"]
+	
 
-# 	except twitter.error.TwitterError as e:
-# 		if continue_user(e):
-# 			counter += 1
-# 		else:
-# 			api_count += 1
-# 			new_api = rate_limit(api, api_count)
-# 			api = new_api
-		
-# 	except requests.exceptions.ConnectionError:
-# 		time.sleep(60)
-# 		api_count += 1
-# 		new_api = rate_limit(api, api_count)
-# 		api = new_api
+	for v in g.vertices():
+		if category[v] == "source" or category[v] == "primary":
+			pt.add_row([uid[v], category[v], node_social_score[v], node_diversity_score[v], 
+						node_neighbors_score[v], node_weight[v]])
+
+	for v in g.vertices():
+		if category[v] == "secondary":
+			pt.add_row([uid[v], category[v], node_social_score[v], node_diversity_score[v], 
+						node_neighbors_score[v], node_weight[v]])
+
+	print(pt)
+
+
+def prettytable_clusteredness(g):
+	pt = PrettyTable()
+	pt.field_names = ["uid", "type", "clusteredness"]
+
+	uid = g.vertex_properties["uid"]
+	category = g.vertex_properties["category"]
+
+	clusteredness = g.vertex_properties["clusteredness"]
+	
+
+	for v in g.vertices():
+		if category[v] == "source" or category[v] == "primary":
+			pt.add_row([uid[v], category[v], clusteredness[v]])
+
+	for v in g.vertices():
+		if category[v] == "secondary":
+			pt.add_row([uid[v], category[v], clusteredness[v]])
+
+
+	print(pt)
+
+
+def prettytable_centrality(g):
+	pt = PrettyTable()
+	pt.field_names = ["uid", "type", "centrality"]
+
+	uid = g.vertex_properties["uid"]
+	category = g.vertex_properties["category"]
+
+	centrality = g.vertex_properties["centrality"]
+	
+
+	for v in g.vertices():
+		if category[v] == "source" or category[v] == "primary":
+			pt.add_row([uid[v], category[v], centrality[v]])
+
+	for v in g.vertices():
+		if category[v] == "secondary":
+			pt.add_row([uid[v], category[v], centrality[v]])
+
+
+	print(pt)
+
+
+
+
+
+
+
 
 

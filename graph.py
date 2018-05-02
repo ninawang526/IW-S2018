@@ -29,31 +29,36 @@ def new_eprop(name, t, g):
 	return prop
 
 
+def is_relevant_node(v, g):
+	category = g.vertex_properties["category"]
+	return (category[v] == "source" or category[v] == "primary" or category[v] == "secondary")
+
+
 def draw_graph(g):
 	# vertex properties
 	color = g.vertex_properties["color"]
+	uid = g.vertex_properties["uid"]
 	node_pen_weight = g.vertex_properties["node_pen_weight"]
 
 	# edge properties
 	edge_pen_weight = g.edge_properties["edge_pen_weight"]
 	edge_weight = g.edge_properties["edge_weight"]
 
-	pos = arf_layout(g, max_iter=0)
+	# pos = arf_layout(g, max_iter=0)
 
-	graph_draw(g, vertex_fill_color=color, vertex_color=color, #vertex_text=label, 
+	graph_draw(g, vertex_fill_color=color, vertex_color=color, #vertex_text=uid, 
 			vertex_text_position = 0, vertex_size=node_pen_weight,
 			edge_color="gray", edge_pen_width=edge_pen_weight,
-			pos=pos,
+			# pos=pos,
 			output_size=(700, 700), output="two-nodes.png")
 
 
-
-
 def pretty_graphing(g, edge_w=None, edge_w_pad=0, node_w=None, node_w_pad=0, edge_c="gray"):
+	color = g.vertex_properties["color"]
+
 	# edge_color = g.edge_properties["edge_color"]
 	edge_pen_weight = g.edge_properties["edge_pen_weight"]
 	node_pen_weight = g.vertex_properties["node_pen_weight"]
-
 
 	for e in g.edges():
 		# edge_color[e] = edge_c
@@ -73,7 +78,6 @@ def pretty_graphing(g, edge_w=None, edge_w_pad=0, node_w=None, node_w_pad=0, edg
 	draw_graph(g)
 
 
-
 def add_edge(g, node_i, node_j, val):
 	if val == 1:
 		e = g.edge(node_i, node_j, add_missing=True)
@@ -82,7 +86,6 @@ def add_edge(g, node_i, node_j, val):
 	elif val == 3:
 		e1 = g.edge(node_i, node_j, add_missing=True)
 		e2 = g.edge(node_j, node_i, add_missing=True)
-
 
 
 def user_to_node(i, cat, users, g, col, l="", t=""):
@@ -142,8 +145,7 @@ def initialize_props(g):
 	centrality = new_vprop("centrality", "float", g)
 
 
-
-def make_graph(status, rel, t):
+def make_graph(status, rel, t, secs=None):
 	g = Graph()
 	initialize_props(g)
 
@@ -170,7 +172,7 @@ def make_graph(status, rel, t):
 	for i in rts:
 		node = user_to_node(i, "primary", users, g, RED, t=rts[i]["RT_AT"])
 		
-		for exposed in rts[i]["FOLLOWERS"]["ids"].keys():
+		for exposed in secs:
 			c = PINK
 			if str(i) in likes:
 				c = WHITE
@@ -207,19 +209,18 @@ def make_graph(status, rel, t):
 				add_edge(g, node_i, node_j, val)
 
 	# pos = sfdp_layout(g)
-	pos = arf_layout(g, max_iter=0)
+	# pos = arf_layout(g, max_iter=0)
 	# pos = fruchterman_reingold_layout(g, n_iter=1000)
 	# pos = radial_tree_layout(g, root)
 
-	graph_draw(g, vertex_fill_color=color, vertex_color=color, vertex_text=label, 
-				vertex_text_position = 0, vertex_size=10,
-				edge_color="gray", 
-				pos=pos,
-				output_size=(700, 700), output="two-nodes.png")
+	# graph_draw(g, vertex_fill_color=color, vertex_color=color, vertex_text=label, 
+	# 			vertex_text_position = 0, vertex_size=10,
+	# 			edge_color="gray", 
+	# 			pos=pos,
+	# 			output_size=(700, 700), output="two-nodes.png")
+	# pretty_graphing(g)
 
 	return g
-
-
 
 
 def in_and_out(v):
@@ -249,11 +250,12 @@ def get_activity(g):
 
 	users = {}
 
+	# examine the timeline of each user, 
 	for v in g.vertices():
 		s = uid[v]
 
 		# ONLY CALCULATE THIS FOR RELEVANT NODES.
-		if category[v] == "primary" or category[v] == "secondary":
+		if is_relevant_node(v, g):
 
 			targets = []
 			for t in v.out_neighbors():
@@ -263,6 +265,7 @@ def get_activity(g):
 
 			node_social, node_diversity, weights = metrics.edge_weight(s, targets)
 
+			# fill in edge weights
 			for t_id_int in weights:
 				t = users[t_id_int]
 				edge = g.edge(v, t) 
@@ -270,13 +273,20 @@ def get_activity(g):
 
 			node_social_score[v] = node_social 
 			node_diversity_score[v] = node_diversity
-			node_neighbors_score[v] = metrics.average_neighbor_weight(v, g)
-
-			print "soc", node_social, "div", node_diversity, "neigh", node_neighbors_score[v]
 
 		else:
 			node_social_score[v] = 0
 			node_diversity_score[v] = 0
+
+	
+	# once found all edge weights, get average neighbor weight for each node
+	for v in g.vertices():
+		if is_relevant_node(v, g):
+			
+			node_neighbors_score[v] = metrics.average_neighbor_weight(v, g)
+			# print uid[v], "soc", node_social_score[v], "div", node_diversity_score[v], "neigh", node_neighbors_score[v]
+
+		else:
 			node_neighbors_score[v] = 0
 
 
@@ -292,10 +302,10 @@ def get_activity(g):
 		div = node_diversity_score[v]
 		neigh = node_neighbors_score[v]
 
-		node_weight[v] = soc + div + neigh		
+		node_weight[v] = soc + div + neigh	
 
-	
-	g.save("specific_edge_weights-ACTIVITY.xml.gz")
+	node_weight = metrics.normalize_weights(node_weight, g.vertices())
+
 
 	# pretty graphing
 	pretty_graphing(g, edge_weight, 1, node_weight, edge_c="gray")
@@ -304,6 +314,7 @@ def get_activity(g):
 
 
 def get_clusteredness(g):
+	uid = g.vertex_properties["uid"]
 	category = g.vertex_properties["category"]
 	clusteredness = g.vertex_properties["clusteredness"]
 
@@ -316,7 +327,7 @@ def get_clusteredness(g):
 		possible = 0
 		actual = 0
 
-		if category[v] == "primary" or category[v] == "secondary":
+		if is_relevant_node(v, g):
 			# ignore their relation to v
 			# discriminate between one-way and two-way edges.
 
@@ -330,14 +341,15 @@ def get_clusteredness(g):
 						if g.edge(source, dest) is not None:
 							actual += 1
 
-		print "possible", possible, "actual", actual
+		
 		if possible == 0:
 			cluster = 0
 		else:
 			cluster = actual / float(possible)
 
 		clusteredness[v] = cluster
-		print "cluster score =", cluster
+
+		print uid[v], "possible", possible, "actual", actual, "cluster score =", cluster
 
 
 	clusteredness = metrics.normalize_weights(clusteredness, g.vertices())
@@ -352,6 +364,7 @@ def get_clusteredness(g):
 # basically, are your followers also connected to others in the network. ***
 # for secondaries with no followers: drop out of calculation.
 def get_centrality(g):
+	uid = g.vertex_properties["uid"]
 	centrality = g.vertex_properties["centrality"]
 	category = g.vertex_properties["category"]
 
@@ -360,7 +373,7 @@ def get_centrality(g):
 		total = 0
 		bridge = 0
 
-		if category[v] == "primary" or category[v] == "secondary":
+		if is_relevant_node(v, g):
 			# ignore their relation to v
 			# discriminate between one-way and two-way edges.
 
@@ -382,6 +395,10 @@ def get_centrality(g):
 			centrality_score = float(bridge) / total
 
 		centrality[v] = centrality_score
+		
+
+		print uid[v]
+		print "bridge:", bridge, "total:", total, "score:", centrality_score
 
 
 	centrality = metrics.normalize_weights(centrality, g.vertices())
@@ -389,8 +406,6 @@ def get_centrality(g):
 	pretty_graphing(g, edge_w=None, node_w=centrality)
 
 	return g
-
-
 
 
 

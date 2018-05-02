@@ -4,6 +4,7 @@ import datetime
 from dateutil.parser import parse
 import utils
 import time
+import twitter, requests
 
 
 
@@ -86,12 +87,12 @@ def user_statuses(user1, targets): #target is list of INTS
 
 
 		# did u2 like things from u1?
-		likes = get_user_ids_of_post_likes(s1.id)
-		for l in likes:
-			assert(type([int(l)]) == type(targets))
-			if int(l) in targets:
-				data[l]["likes"] += 1
-				print l, "likes +1"
+		# likes = get_user_ids_of_post_likes(s1.id)
+		# for l in likes:
+		# 	assert(type([int(l)]) == type(targets))
+		# 	if int(l) in targets:
+		# 		data[l]["likes"] += 1
+		# 		print l, "likes +1"
 
 		i += 1
 
@@ -210,7 +211,7 @@ def average_neighbor_weight(user, g):
 		w = 0
 	else:
 		w = weight / float(num)
-
+		
 	return w
 
 	#******* because rters have more connections based on how i constructed the graph, 
